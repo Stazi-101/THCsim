@@ -23,7 +23,7 @@ def vector_field(t, y, args):
     return d_y
 
 '''
-In diffrax y seems to be a vector of all variables, when there are several coupled.
+In diffrax y seems to be a vector/dicionalr of all variables, when there are several coupled.
 '''
 term = ODETerm(vector_field)
 solver = Tsit5()
