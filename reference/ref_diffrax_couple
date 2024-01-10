@@ -13,7 +13,7 @@ x = prey
 y = predator
 a, B, d, g are parameters
 '''
-
+#y can be a dict   or chex
 def vector_field(t, y, args):
     prey, predator = y
     α, β, γ, δ = args
