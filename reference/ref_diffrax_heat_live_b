@@ -81,15 +81,17 @@ ic = lambda x: x**2
 # Spatial discretisation
 x0 = -1
 x_final = 1
-xn = 15 # Number of discrete values of x
+xn = 200 # Number of discrete values of x
 y0 = SpatialDiscretisation.discretise_fn(x0, x_final, xn, ic)
 
 # Temporal discretisation
 t0 = 0
 t_final = 1
-tn = 15 # Number of values of t where result is saved
-δt = 0.01 # Timestep in 1 step of solver
-dt0 = (t_final-t0)/(tn-1)
+tn = 200 # Number of values of t where result is saved
+tnrun = 40 # Number of times diffeqsolve is run
+δt = 0.01 # Timestep in 1 step of solver?
+dt0 = (t_final-t0)/(tn-1)*tnrun
+
 
 args = None
 
@@ -102,7 +104,7 @@ stepsize_controller = diffrax.PIDController(
 
 # Live calculation
 tprev = t0
-tnext = t0 + δt
+tnext = t0 + dt0
 y = y0
 #state = solver.init(term, tprev, tnext, y0, args)
 
@@ -119,33 +121,26 @@ while tprev < t_final:
         tnext,
         δt,
         y,
-        saveat=diffrax.SaveAt(t1=True),
+        saveat=diffrax.SaveAt( ts = jnp.linspace(tprev,tnext, tnrun+1)[1:]),
         stepsize_controller=stepsize_controller,
         max_steps=None,
     )
-
-    #breakpoint()
 
     tprev = tnext
     tnext = min(tnext + dt0, t_final)
     
     # Save data
-    if i>= tn:
+    if i+tnrun-1 >= tn:
         break
-    #breakpoint()
 
-    ys = ys.at[i].set(sol.ys.vals[0])
+    ys = ys.at[i:i+tnrun].set(sol.ys.vals)
     
     y = SpatialDiscretisation.squish(sol.ys)
-    print(i, tprev, tnext)
-    i += 1
+    print("{} / {}".format(i, tn))
+    i += tnrun
     
 
-print(ys)
-
-
-
-print("aghghgh")
+print("Done :D")
 
 plt.figure(figsize=(5, 5))
 plt.imshow(
