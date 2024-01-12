@@ -85,7 +85,6 @@ t_final = 1
 tn = 15 # Number of values of t where result is saved
 δt = 0.01 # Timestep in 1 step of solver
 dt0 = (t_final-t0)/(tn-1)
-saveat = diffrax.SaveAt(ts=jnp.linspace(t0, t_final, tn))
 
 args = None
 
@@ -106,42 +105,33 @@ state = solver.init(term, tprev, tnext, y0, args)
 ys = jnp.zeros((tn,xn))
 
 i = 0 
-next_save = t0
 while tprev < t_final:
 
-    while tprev < next_save:
+    sol = diffrax.diffeqsolve(
+        term,
+        solver,
+        tprev,
+        tnext,
+        δt,
+        y0,
+        saveat=diffrax.SaveAt(t1=True),
+        stepsize_controller=stepsize_controller,
+        max_steps=None,
+    )
 
-        y, _, _, state, _ = solver.step(term, tprev, tnext, y, 
-                                        args, state, made_jump=False)
-        tprev = tnext 
-        tnext = min(tprev + δt, next_save, t_final)
+    tprev = tnext
+    tnext = min(tnext + dt0, t_final)
     
-    next_save = min(next_save + dt0, t_final)
-
     # Save data
     if i>= tn:
         break
-    ys = ys.at[i].set(y.vals)
+    #breakpoint()
+    ys = ys.at[i].set(sol.ys.vals[1])
     print(i)
     i += 1
     
 
 print(ys)
-
-
-sol = diffrax.diffeqsolve(
-    term,
-    solver,
-    t0,
-    t_final,
-    δt,
-    y0,
-    saveat=saveat,
-    stepsize_controller=stepsize_controller,
-    max_steps=None,
-)
-
-print(sol.ys.vals.shape)
 
 
 
