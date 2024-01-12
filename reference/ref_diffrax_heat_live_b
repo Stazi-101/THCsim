@@ -53,6 +53,11 @@ class SpatialDiscretisation(eqx.Module):
     def __rsub__(self, other):
         return self.binop(other, lambda x, y: y - x)
 
+    @classmethod
+    def squish(cls, sd):
+        return cls(sd.x0, sd.x_final, sd.vals[-1])
+
+
 
 def laplacian(y: SpatialDiscretisation) -> SpatialDiscretisation:
     y_next = jnp.roll(y.vals, shift=1)
@@ -99,12 +104,12 @@ stepsize_controller = diffrax.PIDController(
 tprev = t0
 tnext = t0 + δt
 y = y0
-state = solver.init(term, tprev, tnext, y0, args)
+#state = solver.init(term, tprev, tnext, y0, args)
 
 
 ys = jnp.zeros((tn,xn))
 
-i = 0 
+i = 0
 while tprev < t_final:
 
     sol = diffrax.diffeqsolve(
@@ -113,11 +118,13 @@ while tprev < t_final:
         tprev,
         tnext,
         δt,
-        y0,
+        y,
         saveat=diffrax.SaveAt(t1=True),
         stepsize_controller=stepsize_controller,
         max_steps=None,
     )
+
+    #breakpoint()
 
     tprev = tnext
     tnext = min(tnext + dt0, t_final)
@@ -126,8 +133,11 @@ while tprev < t_final:
     if i>= tn:
         break
     #breakpoint()
-    ys = ys.at[i].set(sol.ys.vals[1])
-    print(i)
+
+    ys = ys.at[i].set(sol.ys.vals[0])
+    
+    y = SpatialDiscretisation.squish(sol.ys)
+    print(i, tprev, tnext)
     i += 1
     
 
