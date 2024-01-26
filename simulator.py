@@ -9,20 +9,6 @@ import matplotlib.pyplot as plt
 from jaxtyping import Array, Float  # https://github.com/google/jaxtyping
 
 
-class Simulator():
-
-    def __init__(self, config):
-        print('Beep boop, sim init')
-        pass
-
-    def simulate_chunk(self, config, ts):
-        print('Beep boop, simulating a chunk')
-        pass
-
-    def simulate_continuous(self, config):
-        print('Beep boop, simulating continuously')
-        pass
-
 
 
 jax.config.update("jax_enable_x64", True)
@@ -72,6 +58,108 @@ class SpatialDiscretisation(eqx.Module):
     @classmethod
     def squish(cls, sd):
         return cls(sd.x0, sd.x_final, sd.vals[-1])
+
+
+
+class Simulator():
+
+    def __init__(s, config):
+        print('Beep boop, sim init')
+        s.term = diffrax.ODETerm(vector_field)
+        s.solver = diffrax.Tsit5()
+
+        # Initial condition
+        s.ic = lambda x: x**2
+
+        # Spatial discretisation
+        s.x0 = -1
+        s.x_final = 1
+        s.xn = 200 # Number of discrete values of x
+        s.y0 = SpatialDiscretisation.discretise_fn(s.x0, s.x_final, s.xn, s.ic)
+
+        # Temporal discretisation
+        s.t0 = 0
+        s.t_final = 1
+        s.tn = 200 # Number of values of t where result is saved
+        s.tnrun = 40 # Number of times diffeqsolve is run
+        s.δt = 0.01 # Timestep in 1 step of solver?
+        s.dt0 = (s.t_final-s.t0)/(s.tn-1)*s.tnrun
+
+
+        s.args = None
+
+        # Tolerances
+        s.rtol = 1e-10
+        s.atol = 1e-10
+        s.stepsize_controller = diffrax.PIDController(
+            pcoeff=0.3, icoeff=0.4, rtol=s.rtol, atol=s.atol, dtmax=0.001
+        )
+
+    def simulate_chunk(s, config, ts):
+        print('Beep boop, simulating a chunk')
+
+        # Live calculation
+        s.tprev = s.t0
+        s.tnext = s.t0 + s.dt0
+        s.y = s.y0
+        #state = solver.init(term, tprev, tnext, y0, args)
+
+
+        s.ys = jnp.zeros((s.tn,s.xn))
+
+        i = 0
+        while s.tprev < s.t_final:
+
+            s.sol = diffrax.diffeqsolve(
+                s.term,
+                s.solver,
+                s.tprev,
+                s.tnext,
+                s.δt,
+                s.y,
+                saveat=diffrax.SaveAt( ts = jnp.linspace(s.tprev,s.tnext, s.tnrun+1)[1:]),
+                stepsize_controller=s.stepsize_controller,
+                max_steps=None,
+            )
+
+            s.tprev = s.tnext
+            s.tnext = min(s.tnext + s.dt0, s.t_final)
+            
+            # Save data
+            if i+s.tnrun-1 >= s.tn:
+                break
+
+            s.ys = s.ys.at[i:i+s.tnrun].set(s.sol.ys.vals)
+            
+            s.y = SpatialDiscretisation.squish(s.sol.ys)
+            print("{} / {}".format(i, s.tn))
+            i += s.tnrun
+            
+
+        print("Done :D")
+
+        plt.figure(figsize=(5, 5))
+        plt.imshow(
+            s.ys,
+            origin="lower",
+            extent=(s.x0, s.x_final, s.t0, s.t_final),
+            aspect=(s.x_final - s.x0) / (s.t_final - s.t0),
+            cmap="inferno",
+        )
+        plt.xlabel("x")
+        plt.ylabel("t", rotation=0)
+        plt.clim(0, 1)
+        plt.colorbar()
+        plt.show()
+
+
+
+    def simulate_continuous(self, config):
+        print('Beep boop, simulating continuously')
+        pass
+
+
+
 
 
 
