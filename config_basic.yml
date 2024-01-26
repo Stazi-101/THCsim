@@ -6,6 +6,34 @@ rest:
 run_length: 10.0
 t_step_saved: 1
 
+problem:
+  vector_field: vf_heat_equation
+  initial_condition: ic_heat_square
+
+
+spatial_discretisation:
+  x_first: -1
+  x_final: 1
+  x_n: 200
+
+temporal_discretisation:
+  t_first: 0
+  t_final: 1
+  t_n: 200
+  t_n_solver_runs: 40
+
+solver_options:
+  type: diffrax_Tsit5
+  finite_diff_dt: 0.01
+  stepsize_controller:
+    type: 'diffrax_PIDController'
+    pcoeff: 0.3
+    icoeff: 0.4
+    rtol: 1e-10
+    atol: 1e-10
+    dtmax: 0.001
+  
+
 map:
   mask_image_path_relative: True
   mask_image_path: "resources\\map\\equirectangular_1920_wikipedia_blue_marble_2002.png"

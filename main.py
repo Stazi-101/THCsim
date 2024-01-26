@@ -16,7 +16,7 @@ def main():
         sim.simulate_continuous(config)
     
     elif type(config['run_length']) is float:
-        sim.simulate_chunk( config, jnp.arange(0, config['run_length'], config['t_step_saved']))
+        sim.draw(config, sim.simulate_chunk(config))
 
 
 

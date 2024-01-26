@@ -63,87 +63,118 @@ class SpatialDiscretisation(eqx.Module):
 
 class Simulator():
 
-    def __init__(s, config):
+    def __init__(self, config):
         print('Beep boop, sim init')
-        s.term = diffrax.ODETerm(vector_field)
-        s.solver = diffrax.Tsit5()
+        s = self; c = config
 
-        # Initial condition
-        s.ic = lambda x: x**2
-
-        # Spatial discretisation
-        s.x0 = -1
-        s.x_final = 1
-        s.xn = 200 # Number of discrete values of x
-        s.y0 = SpatialDiscretisation.discretise_fn(s.x0, s.x_final, s.xn, s.ic)
-
-        # Temporal discretisation
-        s.t0 = 0
-        s.t_final = 1
-        s.tn = 200 # Number of values of t where result is saved
-        s.tnrun = 40 # Number of times diffeqsolve is run
-        s.δt = 0.01 # Timestep in 1 step of solver?
-        s.dt0 = (s.t_final-s.t0)/(s.tn-1)*s.tnrun
-
-
+        # No config for args because I don't know what they are for :)
         s.args = None
 
-        # Tolerances
-        s.rtol = 1e-10
-        s.atol = 1e-10
-        s.stepsize_controller = diffrax.PIDController(
-            pcoeff=0.3, icoeff=0.4, rtol=s.rtol, atol=s.atol, dtmax=0.001
-        )
+        # Set term as decided in config
+        vf = {'vf_heat_equation': vf_heat_equation,
+              }[c['problem']['vector_field']]
+        s.term = diffrax.ODETerm(vf)
 
-    def simulate_chunk(s, config, ts):
+        # Set initial condition as decided in config
+        ic = {'ic_heat_square': ic_heat_square,
+              }[c['problem']['initial_condition']]
+        
+        # Create spatial discretisation of the initial conditions
+        s.y0 = SpatialDiscretisation.discretise_fn(
+            c['spatial_discretisation']['x_first'],
+            c['spatial_discretisation']['x_final'],
+            c['spatial_discretisation']['x_n'], 
+            ic)
+
+        
+
+        #
+        controller = {'diffrax_PIDController': diffrax.PIDController,
+                      }[c['solver_options']['stepsize_controller']['type']] 
+        
+        s.stepsize_controller = controller(
+            pcoeff = c['solver_options']['stepsize_controller']['pcoeff'],
+            icoeff = c['solver_options']['stepsize_controller']['icoeff'],
+            rtol = float(c['solver_options']['stepsize_controller']['rtol']),
+            atol = float(c['solver_options']['stepsize_controller']['atol']),
+            dtmax = c['solver_options']['stepsize_controller']['dtmax'])
+
+        # Set solver as decided in config
+        s.solver = {'diffrax_Tsit5': diffrax.Tsit5(),
+                    }[c['solver_options']['type']]
+
+
+    def simulate_chunk(self, config):
         print('Beep boop, simulating a chunk')
 
+        s = self; c = config
+
+        # Load some config
+        t_first = c['temporal_discretisation']['t_first']
+        t_final = c['temporal_discretisation']['t_final']
+        t_n     = c['temporal_discretisation']['t_n']
+        t_n_run = c['temporal_discretisation']['t_n_solver_runs']
+
+        x_n = c['spatial_discretisation']['x_n']
+        
         # Live calculation
-        s.tprev = s.t0
-        s.tnext = s.t0 + s.dt0
-        s.y = s.y0
-        #state = solver.init(term, tprev, tnext, y0, args)
+        dt0 = (t_final-t_first)/(t_n-1)*t_n_run
+        t_prev = t_first
+        t_next = t_prev + dt0
+        y = s.y0
 
-
-        s.ys = jnp.zeros((s.tn,s.xn))
+        ys = jnp.zeros((t_n,x_n))
 
         i = 0
-        while s.tprev < s.t_final:
+        while t_prev < t_final:
 
-            s.sol = diffrax.diffeqsolve(
+            sol = diffrax.diffeqsolve(
                 s.term,
                 s.solver,
-                s.tprev,
-                s.tnext,
-                s.δt,
-                s.y,
-                saveat=diffrax.SaveAt( ts = jnp.linspace(s.tprev,s.tnext, s.tnrun+1)[1:]),
+                t_prev,
+                t_next,
+                c['solver_options']['finite_diff_dt'],
+                y,
+                saveat=diffrax.SaveAt( ts = jnp.linspace(t_prev,t_next, t_n_run+1)[1:]),
                 stepsize_controller=s.stepsize_controller,
                 max_steps=None,
             )
 
-            s.tprev = s.tnext
-            s.tnext = min(s.tnext + s.dt0, s.t_final)
+            t_prev = t_next
+            t_next = min(t_next + dt0, t_final)
             
             # Save data
-            if i+s.tnrun-1 >= s.tn:
+            if i+t_n_run-1 >= t_n:
                 break
 
-            s.ys = s.ys.at[i:i+s.tnrun].set(s.sol.ys.vals)
+            ys = ys.at[i:i+t_n_run].set(sol.ys.vals)
             
-            s.y = SpatialDiscretisation.squish(s.sol.ys)
-            print("{} / {}".format(i, s.tn))
-            i += s.tnrun
+            y = SpatialDiscretisation.squish(sol.ys)
+            print("{} / {}".format(i, t_n))
+            i += t_n_run
             
 
         print("Done :D")
+        return ys
+    
+    def draw(self, config, ys):
 
+        c = config
+        # Load some config
+        t_first = c['temporal_discretisation']['t_first']
+        t_final = c['temporal_discretisation']['t_final']
+        
+
+        x_first = c['spatial_discretisation']['x_first']
+        x_final = c['spatial_discretisation']['x_final']
+        
+        
         plt.figure(figsize=(5, 5))
         plt.imshow(
-            s.ys,
+            ys,
             origin="lower",
-            extent=(s.x0, s.x_final, s.t0, s.t_final),
-            aspect=(s.x_final - s.x0) / (s.t_final - s.t0),
+            extent=(x_first, x_final, t_first, t_final),
+            aspect=(x_final - x_first) / (t_final - t_first),
             cmap="inferno",
         )
         plt.xlabel("x")
@@ -176,89 +207,11 @@ def laplacian(y: SpatialDiscretisation) -> SpatialDiscretisation:
 def vector_field(t, y, args):
     return (1 - y) * laplacian(y)
 
+def vf_heat_equation(t, y, args):
+    return (1 - y) * laplacian(y)
 
+def ic_heat_square(x):
+    return x**2
 
 if __name__ == '__main__':
-    term = diffrax.ODETerm(vector_field)
-    solver = diffrax.Tsit5()
-
-    # Initial condition
-    ic = lambda x: x**2
-
-    # Spatial discretisation
-    x0 = -1
-    x_final = 1
-    xn = 200 # Number of discrete values of x
-    y0 = SpatialDiscretisation.discretise_fn(x0, x_final, xn, ic)
-
-    # Temporal discretisation
-    t0 = 0
-    t_final = 1
-    tn = 200 # Number of values of t where result is saved
-    tnrun = 40 # Number of times diffeqsolve is run
-    δt = 0.01 # Timestep in 1 step of solver?
-    dt0 = (t_final-t0)/(tn-1)*tnrun
-
-
-    args = None
-
-    # Tolerances
-    rtol = 1e-10
-    atol = 1e-10
-    stepsize_controller = diffrax.PIDController(
-        pcoeff=0.3, icoeff=0.4, rtol=rtol, atol=atol, dtmax=0.001
-    )
-
-    # Live calculation
-    tprev = t0
-    tnext = t0 + dt0
-    y = y0
-    #state = solver.init(term, tprev, tnext, y0, args)
-
-
-    ys = jnp.zeros((tn,xn))
-
-    i = 0
-    while tprev < t_final:
-
-        sol = diffrax.diffeqsolve(
-            term,
-            solver,
-            tprev,
-            tnext,
-            δt,
-            y,
-            saveat=diffrax.SaveAt( ts = jnp.linspace(tprev,tnext, tnrun+1)[1:]),
-            stepsize_controller=stepsize_controller,
-            max_steps=None,
-        )
-
-        tprev = tnext
-        tnext = min(tnext + dt0, t_final)
-        
-        # Save data
-        if i+tnrun-1 >= tn:
-            break
-
-        ys = ys.at[i:i+tnrun].set(sol.ys.vals)
-        
-        y = SpatialDiscretisation.squish(sol.ys)
-        print("{} / {}".format(i, tn))
-        i += tnrun
-        
-
-    print("Done :D")
-
-    plt.figure(figsize=(5, 5))
-    plt.imshow(
-        ys,
-        origin="lower",
-        extent=(x0, x_final, t0, t_final),
-        aspect=(x_final - x0) / (t_final - t0),
-        cmap="inferno",
-    )
-    plt.xlabel("x")
-    plt.ylabel("t", rotation=0)
-    plt.clim(0, 1)
-    plt.colorbar()
-    plt.show()
+    print('Running simulator.py has no effect')
