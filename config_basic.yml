@@ -1,0 +1,11 @@
+rest:
+  url: "https://example.org/primenumbers/v1"
+  port: 8443
+
+
+run_length: 10.0
+t_step_saved: 1
+
+map:
+  mask_image_path_relative: True
+  mask_image_path: "resources\\map\\equirectangular_1920_wikipedia_blue_marble_2002.png"
