@@ -86,12 +86,9 @@ class Simulator():
             c['spatial_discretisation']['x_n'], 
             ic)
 
-        
-
-        #
+        # Set stepsize controller with stepsize options
         controller = {'diffrax_PIDController': diffrax.PIDController,
                       }[c['solver_options']['stepsize_controller']['type']] 
-        
         s.stepsize_controller = controller(
             pcoeff = c['solver_options']['stepsize_controller']['pcoeff'],
             icoeff = c['solver_options']['stepsize_controller']['icoeff'],
@@ -105,7 +102,7 @@ class Simulator():
 
 
     def simulate_continuous_chunks(self, config):
-        print('Beep boop, simulating a chunk')
+        print('Beep boop, simulating chunks forever. These don\'t get displayed as this is not finished')
 
         s = self; c = config
 
@@ -114,7 +111,6 @@ class Simulator():
         t_each_solve   = c['temporal_discretisation_infinite']['t_each_solve']
         t_n_each_solve = c['temporal_discretisation_infinite']['t_n_each_solve']
 
-        
         # Live calculation
         t_prev = t_first
         t_next = t_first + t_each_solve
@@ -176,16 +172,15 @@ class Simulator():
         print("Done :D")
         return sol.ys.vals
     
+
     def draw_chunk(self, config, ys):
 
         c = config
         # Load some config
         t_first = c['temporal_discretisation']['t_first']
         t_final = c['temporal_discretisation']['t_final']
-        
         x_first = c['spatial_discretisation']['x_first']
         x_final = c['spatial_discretisation']['x_final']
-        
         
         plt.figure(figsize=(5, 5))
         plt.imshow(
@@ -200,15 +195,6 @@ class Simulator():
         plt.clim(0, 1)
         plt.colorbar()
         plt.show()
-
-
-
-    def simulate_continuous(self, config):
-        print('Beep boop, simulating continuously')
-        pass
-
-
-
 
 
 
