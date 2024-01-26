@@ -12,11 +12,11 @@ def main():
     
     sim = simulator.Simulator(config)
 
-    if config['run_length'] == 'infinite':
-        sim.simulate_continuous(config)
+    if config['run_infinite']:
+        sim.simulate_continuous_chunks(config)
     
-    elif type(config['run_length']) is float:
-        sim.draw(config, sim.simulate_chunk(config))
+    elif not config['run_infinite']:
+        sim.draw_chunk(config, sim.simulate_chunk(config))
 
 
 

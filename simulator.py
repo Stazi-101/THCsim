@@ -104,29 +104,26 @@ class Simulator():
                     }[c['solver_options']['type']]
 
 
-    def simulate_chunk(self, config):
+    def simulate_continuous_chunks(self, config):
         print('Beep boop, simulating a chunk')
 
         s = self; c = config
 
         # Load some config
-        t_first = c['temporal_discretisation']['t_first']
-        t_final = c['temporal_discretisation']['t_final']
-        t_n     = c['temporal_discretisation']['t_n']
-        t_n_run = c['temporal_discretisation']['t_n_solver_runs']
+        t_first        = c['temporal_discretisation_infinite']['t_first']
+        t_each_solve   = c['temporal_discretisation_infinite']['t_each_solve']
+        t_n_each_solve = c['temporal_discretisation_infinite']['t_n_each_solve']
 
-        x_n = c['spatial_discretisation']['x_n']
         
         # Live calculation
-        dt0 = (t_final-t_first)/(t_n-1)*t_n_run
         t_prev = t_first
-        t_next = t_prev + dt0
+        t_next = t_first + t_each_solve
         y = s.y0
 
-        ys = jnp.zeros((t_n,x_n))
+        saved_ys = []
 
         i = 0
-        while t_prev < t_final:
+        while True:
 
             sol = diffrax.diffeqsolve(
                 s.term,
@@ -135,36 +132,57 @@ class Simulator():
                 t_next,
                 c['solver_options']['finite_diff_dt'],
                 y,
-                saveat=diffrax.SaveAt( ts = jnp.linspace(t_prev,t_next, t_n_run+1)[1:]),
+                saveat=diffrax.SaveAt( ts = jnp.linspace(t_prev,t_next, t_n_each_solve+1)[1:]),
                 stepsize_controller=s.stepsize_controller,
                 max_steps=None,
             )
 
             t_prev = t_next
-            t_next = min(t_next + dt0, t_final)
-            
-            # Save data
-            if i+t_n_run-1 >= t_n:
-                break
+            t_next = t_next + t_each_solve
 
-            ys = ys.at[i:i+t_n_run].set(sol.ys.vals)
+            saved_ys.append(sol.ys.vals)
             
             y = SpatialDiscretisation.squish(sol.ys)
-            print("{} / {}".format(i, t_n))
-            i += t_n_run
-            
+            i += t_n_each_solve
+            print("{} timesteps saved, now processing time {}".format(i,t_prev))
 
         print("Done :D")
-        return ys
+        return saved_ys
     
-    def draw(self, config, ys):
+
+    def simulate_chunk(self, config):
+        print('Beep boop, simulating a chunk')
+
+        s = self; c = config
+
+        # Load some config
+        t_first = c['temporal_discretisation_finite']['t_first']
+        t_final = c['temporal_discretisation_finite']['t_final']
+        t_n     = c['temporal_discretisation_finite']['t_n']
+
+        # Run solver
+        sol = diffrax.diffeqsolve(
+            s.term,
+            s.solver,
+            t_first,
+            t_final,
+            c['solver_options']['finite_diff_dt'],
+            s.y0,
+            saveat=diffrax.SaveAt( ts = jnp.linspace(t_first,t_final, t_n+1)[1:]),
+            stepsize_controller=s.stepsize_controller,
+            max_steps=None,
+        )
+
+        print("Done :D")
+        return sol.ys.vals
+    
+    def draw_chunk(self, config, ys):
 
         c = config
         # Load some config
         t_first = c['temporal_discretisation']['t_first']
         t_final = c['temporal_discretisation']['t_final']
         
-
         x_first = c['spatial_discretisation']['x_first']
         x_final = c['spatial_discretisation']['x_final']
         
