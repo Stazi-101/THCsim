@@ -2,7 +2,7 @@
 run_infinite: False
 
 problem:
-  vector_field: vf_flow_zero
+  vector_field: vf_flow_simplest
   initial_condition: ic_flow_basic
 
 

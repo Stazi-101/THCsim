@@ -106,6 +106,7 @@ class Simulator():
         #dis.draw_chunk_3d(config, yss)
 
         dis.draw_chunk_2d(config, s.y0)
+        dis.draw_chunk_2d(config, laplacian(s.y0))
 
 
         
@@ -211,9 +212,11 @@ def laplacian_old(y: SpatialDiscretisation) -> SpatialDiscretisation:
 def laplacian(y):
     #return y*0
 
-    y_next = jnp.roll(y, shift=1)
-    y_prev = jnp.roll(y, shift=-1)
-    return (y_next - 2 * y + y_prev) / (0.001**2)
+    y_i_next = jnp.roll(y, shift=1, axis=0)
+    y_i_prev = jnp.roll(y, shift=-1,axis=0)
+    y_j_next = jnp.roll(y, shift=1 )
+    y_j_prev = jnp.roll(y, shift=-1)
+    return (y_j_next - 2 * y + y_j_prev) / (0.01**2)
     # Dirichlet boundary condition
     #Δy = Δy.at[0].set(0)
     #Δy = Δy.at[-1].set(0)
