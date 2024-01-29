@@ -9,16 +9,16 @@ problem:
 spatial_discretisation:
   lat_first: -1.57
   lat_final: 1.57
-  lat_n:     20
+  lat_n:     100
   lng_first: -3.14
   lng_final: 3.14
-  lng_n:     41
+  lng_n:     200
 
 
 temporal_discretisation_finite:
   t_first: 0
   t_final: 0.01
-  t_n: 100
+  t_n: 200
 
 temporal_discretisation_infinite: 
   t_first: 0

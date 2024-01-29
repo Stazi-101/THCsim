@@ -105,7 +105,7 @@ class Simulator():
         #breakpoint()
         #dis.draw_chunk_3d(config, yss)
 
-        #dis.draw_chunk_2d(config, s.y0)
+        dis.draw_chunk_2d(config, s.y0)
         #dis.draw_chunk_2d(config, laplacian(s.y0))
 
 
