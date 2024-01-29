@@ -105,8 +105,8 @@ class Simulator():
         #breakpoint()
         #dis.draw_chunk_3d(config, yss)
 
-        dis.draw_chunk_2d(config, s.y0)
-        dis.draw_chunk_2d(config, laplacian(s.y0))
+        #dis.draw_chunk_2d(config, s.y0)
+        #dis.draw_chunk_2d(config, laplacian(s.y0))
 
 
         
@@ -189,7 +189,7 @@ class Simulator():
             t_final,
             c['solver_options']['finite_diff_dt'],
             s.y0,
-            saveat=diffrax.SaveAt( ts = jnp.linspace(t_first,t_final, t_n+1)[1:]),
+            saveat=diffrax.SaveAt( ts = jnp.linspace(t_first,t_final, t_n+1)),
             stepsize_controller=s.stepsize_controller,
             max_steps=None,
         )
@@ -214,9 +214,9 @@ def laplacian(y):
 
     y_i_next = jnp.roll(y, shift=1, axis=0)
     y_i_prev = jnp.roll(y, shift=-1,axis=0)
-    y_j_next = jnp.roll(y, shift=1 )
-    y_j_prev = jnp.roll(y, shift=-1)
-    return (y_j_next - 2 * y + y_j_prev) / (0.01**2)
+    y_j_next = jnp.roll(y, shift=1 ,axis=1)
+    y_j_prev = jnp.roll(y, shift=-1,axis=1)
+    return (y_j_next + y_i_next - 4 * y + y_j_prev + y_i_prev) / (0.01**2)
     # Dirichlet boundary condition
     #Δy = Δy.at[0].set(0)
     #Δy = Δy.at[-1].set(0)

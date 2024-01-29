@@ -67,7 +67,8 @@ class Displayer():
         lng_first = c['spatial_discretisation']['lng_first']
         lng_final = c['spatial_discretisation']['lng_final']
         t_first = c['temporal_discretisation_finite']['t_first']
-        t_final = c['temporal_discretisation_finite']['t_first']
+        t_final = c['temporal_discretisation_finite']['t_final']
+        t_n     = c['temporal_discretisation_finite']['t_n']
 
         
         fig = plt.figure(figsize=(5, 5))
@@ -76,7 +77,7 @@ class Displayer():
         #breakpoint()
 
         im1 = ax.imshow(
-            25*yss[0],
+            yss[0],
             origin="lower",
             #extent=(lng_first, lng_final, lat_first, lat_final),
             #aspect=(lng_final - lng_first) / (lat_final - lat_first),
@@ -84,10 +85,11 @@ class Displayer():
         )
         fig.colorbar(im1)
         axt = fig.add_axes([.25, .2, .65, .03])
-        slider_t = Slider(axt, 'Time', 0, 10, valinit=0)
+        slider_t = Slider(axt, 'Time', t_first, t_final, valinit=0)
 
         def update(val):
-            im1.set_data(25*yss[int(slider_t.val)])
+            index = int((slider_t.val - t_first) / (t_final - t_first) * t_n)
+            im1.set_data(yss[index])
             fig.canvas.draw()
 
         slider_t.on_changed(update)
