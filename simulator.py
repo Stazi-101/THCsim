@@ -5,7 +5,7 @@ import equinox as eqx  # https://github.com/patrick-kidger/equinox
 import jax
 import jax.lax as lax
 import jax.numpy as jnp
-import matplotlib.pyplot as plt
+
 from jaxtyping import Array, Float  # https://github.com/google/jaxtyping
 
 
@@ -77,6 +77,7 @@ class Simulator():
 
         # Set initial condition as decided in config
         ic = {'ic_heat_square': ic_heat_square,
+              'ic_heat_quartic': ic_heat_quartic,
               }[c['problem']['initial_condition']]
         
         # Create spatial discretisation of the initial conditions
@@ -173,30 +174,7 @@ class Simulator():
         return sol.ys.vals
     
 
-    def draw_chunk(self, config, ys):
-
-        c = config
-        # Load some config
-        t_first = c['temporal_discretisation']['t_first']
-        t_final = c['temporal_discretisation']['t_final']
-        x_first = c['spatial_discretisation']['x_first']
-        x_final = c['spatial_discretisation']['x_final']
-        
-        plt.figure(figsize=(5, 5))
-        plt.imshow(
-            ys,
-            origin="lower",
-            extent=(x_first, x_final, t_first, t_final),
-            aspect=(x_final - x_first) / (t_final - t_first),
-            cmap="inferno",
-        )
-        plt.xlabel("x")
-        plt.ylabel("t", rotation=0)
-        plt.clim(0, 1)
-        plt.colorbar()
-        plt.show()
-
-
+    
 
 def laplacian(y: SpatialDiscretisation) -> SpatialDiscretisation:
     y_next = jnp.roll(y.vals, shift=1)
@@ -208,14 +186,15 @@ def laplacian(y: SpatialDiscretisation) -> SpatialDiscretisation:
     return SpatialDiscretisation(y.x0, y.x_final, Δy)
 
 # Problem
-def vector_field(t, y, args):
-    return (1 - y) * laplacian(y)
 
 def vf_heat_equation(t, y, args):
     return (1 - y) * laplacian(y)
 
 def ic_heat_square(x):
     return x**2
+
+def ic_heat_quartic(x):
+    return (x**2 - x**4)*4
 
 if __name__ == '__main__':
     print('Running simulator.py has no effect')

@@ -2,6 +2,7 @@
 import yaml
 import simulator
 import jax.numpy as jnp
+import displayer
 
 CONFIG_LOCATION = "config_basic.yml"
 
@@ -11,12 +12,14 @@ def main():
         config = yaml.safe_load(file)
     
     sim = simulator.Simulator(config)
+    dis = displayer.Displayer()
+
 
     if config['run_infinite']:
         sim.simulate_continuous_chunks(config)
     
     elif not config['run_infinite']:
-        sim.draw_chunk(config, sim.simulate_chunk(config))
+        dis.draw_chunk(config, sim.simulate_chunk(config))
 
 
 

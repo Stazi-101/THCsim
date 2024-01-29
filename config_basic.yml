@@ -1,14 +1,9 @@
-rest:
-  url: "https://example.org/primenumbers/v1"
-  port: 8443
-
 
 run_infinite: False
-t_step_saved: 1
 
 problem:
   vector_field: vf_heat_equation
-  initial_condition: ic_heat_square
+  initial_condition: ic_heat_quartic
 
 
 spatial_discretisation:
