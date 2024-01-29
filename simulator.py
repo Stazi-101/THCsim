@@ -71,21 +71,44 @@ class Simulator():
         s.args = None
 
         # Set term as decided in config
-        vf = {'vf_heat_equation': vf_heat_equation,
+        vf = {'vf_flow_simplest': vf_flow_simplest,
+              'vf_flow_zero': vf_flow_zero,
               }[c['problem']['vector_field']]
         s.term = diffrax.ODETerm(vf)
 
         # Set initial condition as decided in config
-        ic = {'ic_heat_square': ic_heat_square,
-              'ic_heat_quartic': ic_heat_quartic,
+        ic = {'ic_flow_basic': ic_flow_basic,
               }[c['problem']['initial_condition']]
         
         # Create spatial discretisation of the initial conditions
-        s.y0 = SpatialDiscretisation.discretise_fn(
-            c['spatial_discretisation']['x_first'],
-            c['spatial_discretisation']['x_final'],
-            c['spatial_discretisation']['x_n'], 
-            ic)
+        lat_first = c['spatial_discretisation']['lat_first']
+        lat_final = c['spatial_discretisation']['lat_final']
+        lat_n     = c['spatial_discretisation']['lat_n']
+        lng_first = c['spatial_discretisation']['lng_first']
+        lng_final = c['spatial_discretisation']['lng_final']
+        lng_n     = c['spatial_discretisation']['lng_n']
+
+        lat,lng = jnp.mgrid[lat_first:lat_final:lat_n*1j,
+                            lng_first:lng_final:lng_n*1j]
+        
+        s.y0 = ic(lat,lng)
+        print('ic created')
+
+
+
+        import displayer
+        dis = displayer.Displayer()
+        #breakpoint()
+        #yss = jnp.repeat(jnp.expand_dims(s.y0, 2), 10, axis=2)
+        #for i in range(10):
+        #    yss = yss.at[:,:,i].mul(10-i)
+        #breakpoint()
+        #dis.draw_chunk_3d(config, yss)
+
+        dis.draw_chunk_2d(config, s.y0)
+
+
+        
 
         # Set stepsize controller with stepsize options
         controller = {'diffrax_PIDController': diffrax.PIDController,
@@ -171,12 +194,12 @@ class Simulator():
         )
 
         print("Done :D")
-        return sol.ys.vals
+        return sol.ys
     
 
     
 
-def laplacian(y: SpatialDiscretisation) -> SpatialDiscretisation:
+def laplacian_old(y: SpatialDiscretisation) -> SpatialDiscretisation:
     y_next = jnp.roll(y.vals, shift=1)
     y_prev = jnp.roll(y.vals, shift=-1)
     Δy = (y_next - 2 * y.vals + y_prev) / (y.δx**2)
@@ -185,16 +208,31 @@ def laplacian(y: SpatialDiscretisation) -> SpatialDiscretisation:
     Δy = Δy.at[-1].set(0)
     return SpatialDiscretisation(y.x0, y.x_final, Δy)
 
+def laplacian(y):
+    #return y*0
+
+    y_next = jnp.roll(y, shift=1)
+    y_prev = jnp.roll(y, shift=-1)
+    return (y_next - 2 * y + y_prev) / (0.001**2)
+    # Dirichlet boundary condition
+    #Δy = Δy.at[0].set(0)
+    #Δy = Δy.at[-1].set(0)
+
 # Problem
 
-def vf_heat_equation(t, y, args):
-    return (1 - y) * laplacian(y)
+def vf_flow_zero(t, T, args):
+    return T*0
 
-def ic_heat_square(x):
-    return x**2
 
-def ic_heat_quartic(x):
-    return (x**2 - x**4)*4
+def vf_flow_simplest(t, T, args):
+    return laplacian(T)
+
+
+
+
+def ic_flow_basic(lat,lng):
+    return 1 * ((jnp.square(lat) + jnp.square(lng))<0.7)
+
 
 if __name__ == '__main__':
     print('Running simulator.py has no effect')

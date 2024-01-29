@@ -19,7 +19,7 @@ def main():
         sim.simulate_continuous_chunks(config)
     
     elif not config['run_infinite']:
-        dis.draw_chunk(config, sim.simulate_chunk(config))
+        dis.draw_chunk_3d(config, sim.simulate_chunk(config))
 
 
 

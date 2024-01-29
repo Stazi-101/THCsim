@@ -2,23 +2,19 @@
 run_infinite: False
 
 problem:
-  vector_field: vf_flow_zero
-  initial_condition: ic_flow_basic
+  vector_field: vf_heat_equation
+  initial_condition: ic_heat_quartic
 
 
 spatial_discretisation:
-  lat_first: -1.57
-  lat_final: 1.57
-  lat_n:     20
-  lng_first: -3.14
-  lng_final: 3.14
-  lng_n:     41
-
+  x_first: -1
+  x_final: 1
+  x_n: 200
 
 temporal_discretisation_finite:
   t_first: 0
-  t_final: 10
-  t_n: 10
+  t_final: 1
+  t_n: 200
 
 temporal_discretisation_infinite: 
   t_first: 0
