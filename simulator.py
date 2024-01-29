@@ -8,6 +8,7 @@ import jax.numpy as jnp
 
 from jaxtyping import Array, Float  # https://github.com/google/jaxtyping
 
+import problem
 
 
 
@@ -71,13 +72,13 @@ class Simulator():
         s.args = None
 
         # Set term as decided in config
-        vf = {'vf_flow_simplest': vf_flow_simplest,
-              'vf_flow_zero': vf_flow_zero,
+        vf = {'vf_flow_simplest': problem.vf_flow_simplest,
+              'vf_flow_zero': problem.vf_flow_zero,
               }[c['problem']['vector_field']]
         s.term = diffrax.ODETerm(vf)
 
         # Set initial condition as decided in config
-        ic = {'ic_flow_basic': ic_flow_basic,
+        ic = {'ic_flow_basic': problem.ic_flow_basic,
               }[c['problem']['initial_condition']]
         
         # Create spatial discretisation of the initial conditions
@@ -198,43 +199,7 @@ class Simulator():
         return sol.ys
     
 
-    
 
-def laplacian_old(y: SpatialDiscretisation) -> SpatialDiscretisation:
-    y_next = jnp.roll(y.vals, shift=1)
-    y_prev = jnp.roll(y.vals, shift=-1)
-    Δy = (y_next - 2 * y.vals + y_prev) / (y.δx**2)
-    # Dirichlet boundary condition
-    Δy = Δy.at[0].set(0)
-    Δy = Δy.at[-1].set(0)
-    return SpatialDiscretisation(y.x0, y.x_final, Δy)
-
-def laplacian(y):
-    #return y*0
-
-    y_i_next = jnp.roll(y, shift=1, axis=0)
-    y_i_prev = jnp.roll(y, shift=-1,axis=0)
-    y_j_next = jnp.roll(y, shift=1 ,axis=1)
-    y_j_prev = jnp.roll(y, shift=-1,axis=1)
-    return (y_j_next + y_i_next - 4 * y + y_j_prev + y_i_prev) / (0.01**2)
-    # Dirichlet boundary condition
-    #Δy = Δy.at[0].set(0)
-    #Δy = Δy.at[-1].set(0)
-
-# Problem
-
-def vf_flow_zero(t, T, args):
-    return T*0
-
-
-def vf_flow_simplest(t, T, args):
-    return laplacian(T)
-
-
-
-
-def ic_flow_basic(lat,lng):
-    return 1 * ((jnp.square(lat) + jnp.square(lng))<0.7)
 
 
 if __name__ == '__main__':
