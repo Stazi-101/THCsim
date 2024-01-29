@@ -5,62 +5,11 @@ import equinox as eqx  # https://github.com/patrick-kidger/equinox
 import jax
 import jax.lax as lax
 import jax.numpy as jnp
-
 from jaxtyping import Array, Float  # https://github.com/google/jaxtyping
 
 import problem
 
-
-
 jax.config.update("jax_enable_x64", True)
-
-# Represents the interval [x0, x_final] discretised into n equally-spaced points.
-class SpatialDiscretisation(eqx.Module):
-    x0: float = eqx.field(static=True)
-    x_final: float = eqx.field(static=True)
-    vals: Float[Array, "n"]
-
-    @classmethod
-    def discretise_fn(cls, x0: float, x_final: float, n: int, fn: Callable):
-        if n < 2:
-            raise ValueError("Must discretise [x0, x_final] into at least two points")
-        vals = jax.vmap(fn)(jnp.linspace(x0, x_final, n))
-        return cls(x0, x_final, vals)
-
-    @property
-    def δx(self):
-        return (self.x_final - self.x0) / (len(self.vals) - 1)
-
-    def binop(self, other, fn):
-        if isinstance(other, SpatialDiscretisation):
-            if self.x0 != other.x0 or self.x_final != other.x_final:
-                raise ValueError("Mismatched spatial discretisations")
-            other = other.vals
-        return SpatialDiscretisation(self.x0, self.x_final, fn(self.vals, other))
-
-    def __add__(self, other):
-        return self.binop(other, lambda x, y: x + y)
-
-    def __mul__(self, other):
-        return self.binop(other, lambda x, y: x * y)
-
-    def __radd__(self, other):
-        return self.binop(other, lambda x, y: y + x)
-
-    def __rmul__(self, other):
-        return self.binop(other, lambda x, y: y * x)
-
-    def __sub__(self, other):
-        return self.binop(other, lambda x, y: x - y)
-
-    def __rsub__(self, other):
-        return self.binop(other, lambda x, y: y - x)
-
-    @classmethod
-    def squish(cls, sd):
-        return cls(sd.x0, sd.x_final, sd.vals[-1])
-
-
 
 class Simulator():
 
@@ -81,7 +30,7 @@ class Simulator():
         ic = {'ic_flow_basic': problem.ic_flow_basic,
               }[c['problem']['initial_condition']]
         
-        # Create spatial discretisation of the initial conditions
+        # Create spatial discretisation 
         lat_first = c['spatial_discretisation']['lat_first']
         lat_final = c['spatial_discretisation']['lat_final']
         lat_n     = c['spatial_discretisation']['lat_n']
@@ -92,25 +41,12 @@ class Simulator():
         lat,lng = jnp.mgrid[lat_first:lat_final:lat_n*1j,
                             lng_first:lng_final:lng_n*1j]
         
+        # Create values of inital conditions on the discretisation
         s.y0 = ic(lat,lng)
         print('ic created')
 
-
-
-        import displayer
-        dis = displayer.Displayer()
-        #breakpoint()
-        #yss = jnp.repeat(jnp.expand_dims(s.y0, 2), 10, axis=2)
-        #for i in range(10):
-        #    yss = yss.at[:,:,i].mul(10-i)
-        #breakpoint()
-        #dis.draw_chunk_3d(config, yss)
-
-        dis.draw_chunk_2d(config, s.y0)
-        #dis.draw_chunk_2d(config, laplacian(s.y0))
-
-
-        
+        # Check how the initial condition data looks
+        '''dis.draw_chunk_2d(config, s.y0)'''
 
         # Set stepsize controller with stepsize options
         controller = {'diffrax_PIDController': diffrax.PIDController,
@@ -126,7 +62,7 @@ class Simulator():
         s.solver = {'diffrax_Tsit5': diffrax.Tsit5(),
                     }[c['solver_options']['type']]
 
-
+    # Incomplete
     def simulate_continuous_chunks(self, config):
         print('Beep boop, simulating chunks forever. These don\'t get displayed as this is not finished')
 
@@ -171,7 +107,7 @@ class Simulator():
         print("Done :D")
         return saved_ys
     
-
+    # Solve for the given chunk
     def simulate_chunk(self, config):
         print('Beep boop, simulating a chunk')
 
