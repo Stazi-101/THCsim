@@ -1,9 +1,9 @@
-
+print('started running')
 import yaml
 import simulator
 import jax.numpy as jnp
 import displayer
-
+print('stuff imported')
 CONFIG_LOCATION = "config_basic.yml"
 
 def main():
@@ -28,3 +28,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    

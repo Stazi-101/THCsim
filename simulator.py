@@ -17,12 +17,12 @@ class Simulator():
         print('Beep boop, sim init')
         s = self; c = config
 
-        # No config for args because I don't know what they are for :)
-        s.args = None
+        s.args = [config]
 
         # Set term as decided in config
         vf = {'vf_flow_simplest': problem.vf_flow_simplest,
               'vf_flow_zero': problem.vf_flow_zero,
+              'vf_flow_basic': problem.vf_flow_basic,
               }[c['problem']['vector_field']]
         s.term = diffrax.ODETerm(vf)
 
@@ -129,6 +129,7 @@ class Simulator():
             saveat=diffrax.SaveAt( ts = jnp.linspace(t_first,t_final, t_n+1)),
             stepsize_controller=s.stepsize_controller,
             max_steps=None,
+            args = s.args
         )
 
         print("Done :D")
