@@ -2,12 +2,12 @@
 run_infinite: False
 
 problem:
-  vector_field: vf_flow_basic
+  vector_field: vf_flow_advection_only
   initial_condition: ic_flow_basic
 
 constants:
   horizontal_diffusivity: 1
-  horizontal_viscosity: 0.001
+  horizontal_viscosity: 1
   reference_density: 0.001
 
 spatial_discretisation:
@@ -16,12 +16,12 @@ spatial_discretisation:
   lat_n:     100
   lng_first: -3.14
   lng_final: 3.14
-  lng_n:     200
+  lng_n:     20
 
 
 temporal_discretisation_finite:
   t_first: 0
-  t_final: 0.01
+  t_final: 0.1
   t_n: 200
 
 temporal_discretisation_infinite: 

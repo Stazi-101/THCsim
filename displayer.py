@@ -25,7 +25,7 @@ class Displayer():
         yssc = np.expand_dims(Ts, 3)
         yssc = np.repeat(yssc, 3, axis=3)
         yssc[:,:,:,1] = Ss
-        yssc[:,:,:,2] = vs[0] + vs[1]
+        yssc[:,:,:,2] = np.linalg.norm(vs, axis=0)
 
         pqg.image(np.swapaxes(np.array(yssc), 1, 2))
 

@@ -23,6 +23,7 @@ class Simulator():
         vf = {'vf_flow_simplest': problem.vf_flow_simplest,
               'vf_flow_zero': problem.vf_flow_zero,
               'vf_flow_basic': problem.vf_flow_basic,
+              'vf_flow_advection_only': problem.vf_flow_advection_only
               }[c['problem']['vector_field']]
         s.term = diffrax.ODETerm(vf)
 
