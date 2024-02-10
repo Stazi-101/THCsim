@@ -29,6 +29,8 @@ class Simulator():
 
         # Set initial condition as decided in config
         ic = {'ic_flow_basic': problem.ic_flow_basic,
+              'ic_flow_v_only': problem.ic_flow_v_only,
+              'ic_flow_vt_only': problem.ic_flow_vt_only
               }[c['problem']['initial_condition']]
         
         # Create spatial discretisation 
@@ -51,16 +53,19 @@ class Simulator():
 
         # Set stepsize controller with stepsize options
         controller = {'diffrax_PIDController': diffrax.PIDController,
+                      'diffrax_ConstantStepSize': diffrax.ConstantStepSize,
                       }[c['solver_options']['stepsize_controller']['type']] 
-        s.stepsize_controller = controller(
+        s.stepsize_controller = controller()
+        '''s.stepsize_controller = controller(
             pcoeff = c['solver_options']['stepsize_controller']['pcoeff'],
             icoeff = c['solver_options']['stepsize_controller']['icoeff'],
             rtol = float(c['solver_options']['stepsize_controller']['rtol']),
             atol = float(c['solver_options']['stepsize_controller']['atol']),
-            dtmax = c['solver_options']['stepsize_controller']['dtmax'])
+            dtmax = c['solver_options']['stepsize_controller']['dtmax'])'''
 
         # Set solver as decided in config
         s.solver = {'diffrax_Tsit5': diffrax.Tsit5(),
+                    'diffrax_Euler': diffrax.Euler()
                     }[c['solver_options']['type']]
 
     # Incomplete

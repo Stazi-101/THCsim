@@ -2,38 +2,38 @@
 run_infinite: False
 
 problem:
-  vector_field: vf_flow_advection_only
+  vector_field: vf_flow_basic
   initial_condition: ic_flow_basic
 
 constants:
-  horizontal_diffusivity: 1
-  horizontal_viscosity: 1
-  reference_density: 0.001
+  horizontal_diffusivity: 0.001
+  horizontal_viscosity: 0.01
+  reference_density: 0.1
 
 spatial_discretisation:
   lat_first: -1.57
   lat_final: 1.57
-  lat_n:     100
+  lat_n:     200
   lng_first: -3.14
   lng_final: 3.14
-  lng_n:     20
+  lng_n:     400
 
 
 temporal_discretisation_finite:
   t_first: 0
-  t_final: 0.1
+  t_final: 1
   t_n: 200
 
 temporal_discretisation_infinite: 
   t_first: 0
-  t_each_solve: 0.5
+  t_each_solve: 0.01
   t_n_each_solve: 100
 
 solver_options:
-  type: diffrax_Tsit5
-  finite_diff_dt: 0.01
+  type: diffrax_Euler
+  finite_diff_dt: 0.001
   stepsize_controller:
-    type: 'diffrax_PIDController'
+    type: 'diffrax_ConstantStepSize'
     pcoeff: 0.3
     icoeff: 0.4
     rtol: 1.0e-10
