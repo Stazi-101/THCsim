@@ -3,7 +3,7 @@ run_infinite: False
 
 problem:
   vector_field: vf_flow_basic
-  initial_condition: ic_flow_basic
+  initial_condition: ic_flow_funky
 
 constants:
   horizontal_diffusivity: 0.001
@@ -21,7 +21,7 @@ spatial_discretisation:
 
 temporal_discretisation_finite:
   t_first: 0
-  t_final: 1
+  t_final: 1.5
   t_n: 200
 
 temporal_discretisation_infinite: 

@@ -60,6 +60,17 @@ def ic_flow_basic(lat,lng):
 
     return T, S, v
 
+def ic_flow_funky(lat,lng):
+
+    T = 1 * ((jnp.square(lat) + jnp.square(lng))<0.7)
+    S = 1 * ((jnp.square(lat) + jnp.square(lng+1))<0.7)
+    v = jnp.zeros((2, lat.shape[0], lat.shape[1]))
+    v = v.at[1].set( 1 * ((jnp.square(lat+0.5) + jnp.square(lng+0.5))<1) )
+    #v = v.at[0].set( 1 * ((jnp.square(lat+0.8) + jnp.square(lng+0.2))<.1) )
+    #v = v.at[0].set(-1 * ((jnp.square(lat+0.3) + jnp.square(lng+0.8))<.1) )
+
+    return T, S, v
+
 def ic_flow_vt_only(lat,lng):
 
     T = 1 * ((jnp.square(lat) + jnp.square(lng))<0.2)
@@ -107,3 +118,11 @@ def advection(v, y):
     return v[0] * ptheta(y) + v[1] * plambda(y)
 
 
+def divergence(v):
+    return ptheta(v[0]) + plambda(v[1])
+
+def project_divergencefree(v):
+
+    
+
+    pass

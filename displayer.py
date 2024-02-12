@@ -24,6 +24,7 @@ class Displayer():
         vs = np.swapaxes(vs, 0, 1)
         yssc = np.expand_dims(Ts, 3)
         yssc = np.repeat(yssc, 3, axis=3)
+        #yssc = yssc*0
         yssc[:,:,:,1] = Ss
         yssc[:,:,:,2] = np.linalg.norm(vs, axis=0)
 
