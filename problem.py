@@ -88,7 +88,7 @@ def ic_flow_v_only(lat,lng):
     v = jnp.zeros((2, lat.shape[0], lat.shape[1]))
     #v = v.at[0, 50:70, 50:70].set(1)
     v = v.at[0].set( 1 * ((jnp.square(lat+0.5) + jnp.square(lng+0.5))<0.5) )
-    v = v.at[1].set( -1 * ((jnp.square(lat-0.5) + jnp.square(lng-0.5))<0.5) )
+    #v = v.at[1].set( -1 * ((jnp.square(lat-0.5) + jnp.square(lng-0.5))<0.5) )
 
     return T, S, v
 
