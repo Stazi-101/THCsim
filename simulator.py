@@ -23,7 +23,7 @@ class Simulator():
         vf = {'vf_flow_simplest': problem.vf_flow_simplest,
               'vf_flow_zero': problem.vf_flow_zero,
               'vf_flow_basic': problem.vf_flow_basic,
-              'vf_flow_advection_only': problem.vf_flow_advection_only
+              'vf_flow_incompressible': problem.vf_flow_incompressible
               }[c['problem']['vector_field']]
         s.term = diffrax.ODETerm(vf)
 
@@ -31,7 +31,8 @@ class Simulator():
         ic = {'ic_flow_basic': problem.ic_flow_basic,
               'ic_flow_v_only': problem.ic_flow_v_only,
               'ic_flow_vt_only': problem.ic_flow_vt_only,
-              'ic_flow_funky': problem.ic_flow_funky
+              'ic_flow_funky': problem.ic_flow_funky,
+              'ic_flow_ts_only': problem.ic_flow_ts_only
               }[c['problem']['initial_condition']]
         
         # Create spatial discretisation 

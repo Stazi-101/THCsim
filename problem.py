@@ -1,4 +1,5 @@
 import jax.numpy as jnp
+import jax.scipy as jsp
 
 
 # Vector fields: list of ys -> list of dy/dts
@@ -30,7 +31,7 @@ def vf_flow_basic(t, ys, args):
 
     return (dT, dS, dv)
 
-def vf_flow_advection_only(t, ys, args):
+def vf_flow_incompressible(t, ys, args):
     T, S, v = ys
     config = args[0]
 
@@ -38,15 +39,16 @@ def vf_flow_advection_only(t, ys, args):
     A_MH = config['constants']['horizontal_viscosity']
     rho_0 = config['constants']['reference_density']
 
-    p = 1 + T*0.01 + S*0.01
+    p = 1 - T*0.01 - S*0.01
 
-    dT = advection(v, T)
-    dS = advection(v, S)
+    dT = A_HH * laplacian(T) + advection(v, T)
+    dS = A_HH * laplacian(S) + advection(v, S)
 
-    dv = A_MH * laplacian(v) + advection(v, v)
-    dv = dv.at[0].add( -1/rho_0 * ptheta(p) )
-    dv = dv.at[1].add( -1/rho_0 * plambda(p) )
+    dv = A_MH * laplacian(v) #+ advection(v, v)
+    dv = dv.at[0].add( -1/rho_0 * ptheta(p) + advection(v,v[0]))
+    dv = dv.at[1].add( -1/rho_0 * plambda(p) + advection(v,v[1]))
 
+    dv = project_divergencefree(dv)
 
     return (dT, dS, dv)
 
@@ -57,6 +59,15 @@ def ic_flow_basic(lat,lng):
     S = 1 * ((jnp.square(lat) + jnp.square(lng+1))<0.7)
     v = jnp.zeros((2, lat.shape[0], lat.shape[1]))
     v = v.at[1].set( 1 * ((jnp.square(lat+0.5) + jnp.square(lng+0.5))<1) )
+
+    return T, S, v
+
+
+def ic_flow_ts_only(lat,lng):
+
+    T = 1 * ((jnp.square(lat) + jnp.square(lng))<0.7)
+    S = 1 * ((jnp.square(lat) + jnp.square(lng+1))<0.7)
+    v = jnp.zeros((2, lat.shape[0], lat.shape[1]))
 
     return T, S, v
 
@@ -117,12 +128,28 @@ def advection(v, y):
         raise RuntimeError('y too many dimensions')
     return v[0] * ptheta(y) + v[1] * plambda(y)
 
-
+# Incompressability stuff
 def divergence(v):
     return ptheta(v[0]) + plambda(v[1])
 
+def gradient(y):
+    return jnp.array( (ptheta(y), plambda(y)))
+
 def project_divergencefree(v):
-
+    # See test_nb for proof that this doesn't work correctly
+    q, _ = jsp.sparse.linalg.cg(
+        laplacian,
+        -divergence(v), 
+        maxiter= 1000)
     
+    v_f = v + 0.1*gradient(q)
+    
+    return v_f
 
-    pass
+def aghhhh(v):
+
+    q, _ = jsp.sparse.linalg.cg(
+        laplacian,
+        -divergence(v), 
+        maxiter= 1000)
+    return gradient(q)
