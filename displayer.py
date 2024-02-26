@@ -19,7 +19,9 @@ class Displayer():
 
     # Draw array shaped (t, lat, long)
     def draw_chunk_3d(self, config, yss):
-        Ts, Ss, vs = [np.array(ys) for ys in yss]
+        Ts, Ss, vs = [np.clip(np.array(ys), -100, 100) for ys in yss]
+
+
 
         vs = np.swapaxes(vs, 0, 1)
         yssc = np.expand_dims(Ts, 3)

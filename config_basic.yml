@@ -3,7 +3,7 @@ run_infinite: False
 
 problem:
   vector_field: vf_flow_incompressible
-  initial_condition: ic_flow_ts_only
+  initial_condition: ic_flow_basic_divfree
 
 constants:
   horizontal_diffusivity: 0.001
