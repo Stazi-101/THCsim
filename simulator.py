@@ -17,12 +17,11 @@ class Simulator():
         print('Beep boop, sim init')
         s = self; c = config
 
-        s.args = [config]
+        s.args = {'config':config,
+                  'q_last':None}
 
         # Set term as decided in config
-        vf = {'vf_flow_simplest': problem.vf_flow_simplest,
-              'vf_flow_zero': problem.vf_flow_zero,
-              'vf_flow_basic': problem.vf_flow_basic,
+        vf = {'vf_flow_basic': problem.vf_flow_basic,
               'vf_flow_incompressible': problem.vf_flow_incompressible
               }[c['problem']['vector_field']]
         s.term = diffrax.ODETerm(vf)
@@ -109,7 +108,7 @@ class Simulator():
 
             saved_ys.append(sol.ys.vals)
             
-            y = SpatialDiscretisation.squish(sol.ys)
+            #y = SpatialDiscretisation.squish(sol.ys)
             i += t_n_each_solve
             print("{} timesteps saved, now processing time {}".format(i,t_prev))
 

@@ -1,7 +1,7 @@
 import jax.numpy as jnp
 import jax.scipy as jsp
 
-CG_REPEATS = 5
+CG_REPEATS = 2
 DT = 0.01
 MAXITER = 100
 
@@ -16,7 +16,7 @@ def vf_flow_simplest(t, T, args):
 
 def vf_flow_basic(t, ys, args):
     T, S, v = ys
-    config = args[0]
+    config = args['config']
 
     A_HH = config['constants']['horizontal_diffusivity']
     A_MH = config['constants']['horizontal_viscosity']
@@ -36,7 +36,7 @@ def vf_flow_basic(t, ys, args):
 
 def vf_flow_incompressible(t, ys, args):
     T, S, v = ys
-    config = args[0]
+    config = args['config']
 
     A_HH = config['constants']['horizontal_diffusivity']
     A_MH = config['constants']['horizontal_viscosity']
@@ -47,11 +47,13 @@ def vf_flow_incompressible(t, ys, args):
     dT = A_HH * laplacian(T) + advection(v, T)
     dS = A_HH * laplacian(S) + advection(v, S)
 
+    print(v)
+
     dv = A_MH * laplacian(v)
     dv = dv.at[0].add( -1/rho_0 * ptheta(p) + advection(v,v[0]))
     dv = dv.at[1].add( -1/rho_0 * plambda(p) + advection(v,v[1]))
 
-    dv = project_divergencefree(dv)
+    dv = project_divergencefree(dv, args['q_last'])
 
     return (dT, dS, dv)
 
@@ -176,8 +178,15 @@ def divergence(v):
 
 # Incompressability 
 
-def project_divergencefree(v):
-    v_f = v
+def project_divergencefree(v, q_guess=None):
+
+    q, _ = jsp.sparse.linalg.cg(
+            laplacian,
+            -divergence(v), 
+            x0=q_guess,
+            maxiter= MAXITER)
+    #q_total = q
+    v_f = v + gradient(q)
     # Repeats as conjugate gradient descent does not necessarily converge to correct solution after 1 run
     for i in range(CG_REPEATS):
         # q is the exact "pressure" needed to maintain densities
@@ -185,6 +194,7 @@ def project_divergencefree(v):
             laplacian,
             -divergence(v_f), 
             maxiter= MAXITER)
+        #q_total += q
         v_f += gradient(q)
     return v_f
 
