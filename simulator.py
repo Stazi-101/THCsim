@@ -22,7 +22,8 @@ class Simulator():
 
         # Set term as decided in config
         vf = {'vf_flow_basic': problem.vf_flow_basic,
-              'vf_flow_incompressible': problem.vf_flow_incompressible
+              'vf_flow_incompressible': problem.vf_flow_incompressible,
+              'vf_flow_semicompressible': problem.vf_flow_semicompressible
               }[c['problem']['vector_field']]
         s.term = diffrax.ODETerm(vf)
 

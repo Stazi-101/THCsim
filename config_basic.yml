@@ -2,7 +2,7 @@
 run_infinite: False
 
 problem:
-  vector_field: vf_flow_incompressible
+  vector_field: vf_flow_semicompressible
   initial_condition: ic_flow_basic_divfree
 
 constants:
@@ -20,7 +20,7 @@ spatial_discretisation:
 
 temporal_discretisation_finite:
   t_first: 0
-  t_final: 1
+  t_final: 2
   t_n: 200
 
 temporal_discretisation_infinite: 

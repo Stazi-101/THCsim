@@ -57,6 +57,32 @@ def vf_flow_incompressible(t, ys, args):
 
     return (dT, dS, dv)
 
+def vf_flow_semicompressible(t, ys, args):
+    T, S, v = ys
+    config = args['config']
+
+    A_HH = config['constants']['horizontal_diffusivity']
+    A_MH = config['constants']['horizontal_viscosity']
+    rho_0 = config['constants']['reference_density']
+
+    p = 1 - T*0.01 - S*0.01
+
+    dT = A_HH * laplacian(T) + advection(v, T)
+    dS = A_HH * laplacian(S) + advection(v, S)
+
+    print(v)
+
+    dv = A_MH * laplacian(v)
+    dv = dv.at[0].add( advection(v,v[0]) )
+    dv = dv.at[1].add( advection(v,v[1]) )
+
+    dv = project_divergencefree(dv, args['q_last'])
+
+    dv = dv.at[0].add( -1/rho_0 * ptheta(p) )
+    dv = dv.at[1].add( -1/rho_0 * plambda(p) )
+
+    return (dT, dS, dv)
+
 # Initial conditions: coordinates -> list of ys
 def ic_flow_basic(lat,lng):
     
