@@ -36,3 +36,8 @@ class Displayer():
 
         input()
         #breakpoint()
+        
+        
+if __name__ == '__main__':
+    dis = Displayer()
+    dis.draw_chunk_2d(None, np.zeros((10,10)))
