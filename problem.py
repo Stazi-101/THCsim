@@ -79,22 +79,27 @@ def vf_flow_semicompressible(t, ys, args):
 
     return (dT, dS, dv)
 
+
+
 # Initial conditions: coordinates -> list of ys
 def ic_flow_basic(lat,lng):
     
     # Hot spot in centre
-    T = 1 * ((jnp.square(lat) + jnp.square(lng))<0.7)
+    T = 1 * ((jnp.square(lat) + jnp.square(lng))<0.7) 
     # Salty spot
     S = 1 * ((jnp.square(lat) + jnp.square(lng+1))<0.7)
 
-    #Initialise v as 0
+    # Initialise v as 0
     v = jnp.zeros((2, lat.shape[0], lat.shape[1]))
     # Add a spot of vertical movement
     v = v.at[1].set( 1 * ((jnp.square(lat+0.5) + jnp.square(lng+0.5))<1) )
+    # Force v to be divergence free
+    v = project_divergencefree(v)
 
-    return T, S, v
+    return (T, S, v), {}
 
-def ic_flow_basic_divfree(lat,lng):
+
+def ic_flow_basic_noboundary(lat,lng):
 
     # Hot spot in centre
     T = 1 * ((jnp.square(lat) + jnp.square(lng))<0.7) 
@@ -108,8 +113,7 @@ def ic_flow_basic_divfree(lat,lng):
     # Force v to be divergence free
     v = project_divergencefree(v)
 
-    return T, S, v
-
+    return (T, S, v), {}
 
 def ic_flow_ts_only(lat,lng):
 
@@ -120,7 +124,7 @@ def ic_flow_ts_only(lat,lng):
     # Initialise v is 0. Naturally divergence free :D
     v = jnp.zeros((2, lat.shape[0], lat.shape[1]))
 
-    return T, S, v
+    return (T, S, v), {}
 
 def ic_flow_funky(lat,lng):
 
@@ -136,7 +140,7 @@ def ic_flow_funky(lat,lng):
     v = v.at[0].set( 1 * ((jnp.square(lat+0.8) + jnp.square(lng+0.2))<.1) )
     v = v.at[0].set(-1 * ((jnp.square(lat+0.3) + jnp.square(lng+0.8))<.1) )
 
-    return T, S, v
+    return (T, S, v), {}
 
 def ic_flow_vt_only(lat,lng):
 
@@ -151,7 +155,7 @@ def ic_flow_vt_only(lat,lng):
     v = v.at[0].set( 1 * ((jnp.square(lat) + jnp.square(lng))<0.8) )
     v = v.at[1].set( -1 * ((jnp.square(lat-0.5) + jnp.square(lng-0.5))<0.5) )
 
-    return T, S, v
+    return (T, S, v), {}
 
 def ic_flow_v_only(lat,lng):
 
@@ -163,7 +167,7 @@ def ic_flow_v_only(lat,lng):
     # Add moving spot
     v = v.at[0].set( 1 * ((jnp.square(lat+0.5) + jnp.square(lng+0.5))<0.5) )
 
-    return T, S, v
+    return (T, S, v), {}
 
 
 # Functional definitions

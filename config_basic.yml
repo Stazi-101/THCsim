@@ -9,7 +9,7 @@ save:
 
 problem:
   vector_field: vf_flow_incompressible
-  initial_condition: ic_flow_basic_divfree
+  initial_condition: ic_flow_basic
 
 constants:
   horizontal_diffusivity: 0.001
@@ -48,4 +48,4 @@ solver_options:
 
 map:
   mask_image_path_relative: True
-  mask_image_path: "resources\\map\\equirectangular_1920_wikipedia_blue_marble_2002.png"
+  mask_image_path: "resources/map/equirectangular_1920_wikipedia_blue_marble_2002.png"

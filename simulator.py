@@ -78,7 +78,7 @@ class Simulator():
 
         # Set initial condition as decided in config
         ic = {'ic_flow_basic': problem.ic_flow_basic,
-              'ic_flow_basic_divfree': problem.ic_flow_basic_divfree,
+              'ic_flow_basic_noboundary': problem.ic_flow_basic_noboundary,
               'ic_flow_v_only': problem.ic_flow_v_only,
               'ic_flow_vt_only': problem.ic_flow_vt_only,
               'ic_flow_funky': problem.ic_flow_funky,

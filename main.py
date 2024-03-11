@@ -2,7 +2,7 @@ print('started running')
 import yaml
 import simulator
 import jax.numpy as jnp
-import displayer
+#import displayer
 import save_load
 import jax
 import datetime
