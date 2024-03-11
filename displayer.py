@@ -35,6 +35,8 @@ class Displayer():
         
         return cls(config, scalar_fields, vector_fields)
 
+    def get_yss(self):
+        return self.data
 
     # Draw array shaped (t, lat, long)
     def slice(self, x=0, y=0):
@@ -49,5 +51,18 @@ class Displayer():
 
 
 if __name__ == '__main__':
-    dis = Displayer()
-    dis.draw_chunk_2d(None, np.zeros((10,10)))
+
+    do_pyqt = False
+    if do_pyqt:
+        import pickle as pkl
+        import pyqtgraph as pqg
+        import numpy as np
+        with open('output/test3.npy', 'rb') as file:
+            ddd = pkl.load(file)
+        
+
+        dis = Displayer.fromSimOutput({}, ddd)
+        pqg.image(np.swapaxes(dis.get_yss(), 1, 2))
+        input()
+
+
