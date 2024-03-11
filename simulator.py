@@ -104,20 +104,20 @@ class Simulator():
         '''dis.draw_chunk_2d(config, s.y0)'''
 
         # Set stepsize controller with stepsize options
-        controller = {'diffrax_PIDController': diffrax.PIDController,
-                      'diffrax_ConstantStepSize': diffrax.ConstantStepSize,
-                      }[c['solver_options']['stepsize_controller']['type']] 
-        s.stepsize_controller = controller() #PUT THIS BACK IN IF YOU WANNA USE CONSTANT STEP SIZE
-        '''
-        s.stepsize_controller = controller(
-            pcoeff = c['solver_options']['stepsize_controller']['pcoeff'],
-            icoeff = c['solver_options']['stepsize_controller']['icoeff'],
-            rtol = float(c['solver_options']['stepsize_controller']['rtol']),
-            atol = float(c['solver_options']['stepsize_controller']['atol']),
-            dtmax = c['solver_options']['stepsize_controller']['dtmax'])'''
+        controller_type = c['solver_options']['stepsize_controller']['type']
+        if controller_type == 'diffrax_PIDController':
+            s.stepsize_controller = diffrax.PIDController(
+                pcoeff = c['solver_options']['stepsize_controller']['pcoeff'],
+                icoeff = c['solver_options']['stepsize_controller']['icoeff'],
+                rtol = float(c['solver_options']['stepsize_controller']['rtol']),
+                atol = float(c['solver_options']['stepsize_controller']['atol']),
+                dtmax = c['solver_options']['stepsize_controller']['dtmax'])
+        elif controller_type == 'diffrax_ConstantStepSize':
+            s.stepsize_controller = diffrax.ConstantStepSize()
 
         # Set solver as decided in config
         s.solver = {'diffrax_Tsit5': diffrax.Tsit5(),
+                    'diffrax_Midpoint': diffrax.Midpoint(),
                     'diffrax_Euler': diffrax.Euler()
                     }[c['solver_options']['type']]
 

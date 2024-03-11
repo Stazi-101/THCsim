@@ -3,9 +3,9 @@ run_infinite: False
 display: False
 
 save:
-  save_npy: True
-  save_npy_overwrite: False
-  save_npy_path: "output/test"
+  save_pkl: True
+  save_pkl_overwrite: False
+  save_pkl_path: "output/incompressible_Midpoint_t1_"
 
 problem:
   vector_field: vf_flow_incompressible
@@ -35,15 +35,15 @@ temporal_discretisation_infinite:
   t_n_each_solve: 100
 
 solver_options:
-  type: 'diffrax_Euler'
+  type: 'diffrax_Midpoint'
   finite_diff_dt: 0.001
   stepsize_controller:
-    type: 'diffrax_ConstantStepSize'
+    type: 'diffrax_PIDController'
     pcoeff: 0.3
     icoeff: 0.4
     rtol: 1.0e-7
     atol: 1.0e-7
-    dtmax: 0.001
+    dtmax: 0.01
   
 
 map:

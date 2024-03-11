@@ -38,9 +38,9 @@ def main():
         print('Simulation done :D')
         
     if config['display']:
-        dis.draw_chunk_3d(config, chunk)
+        print('Display from see.ipynm')
         
-    if config['save']['save_npy']:
+    if config['save']['save_pkl']:
         print('Saving...')
         save_load.save(config, chunk)
         print('saved')
