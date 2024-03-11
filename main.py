@@ -21,7 +21,7 @@ def main():
     print('Beep boop, sim creating initial condition state...')
 
     sim = simulator.Simulator(config)
-    dis = displayer.Displayer()
+    #dis = displayer.Displayer()
 
     # Incomplete: Run indefinitely
     if config['run_infinite']:

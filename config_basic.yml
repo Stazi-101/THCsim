@@ -8,7 +8,7 @@ save:
   save_npy_path: "output/test"
 
 problem:
-  vector_field: vf_flow_semicompressible
+  vector_field: vf_flow_incompressible
   initial_condition: ic_flow_basic_divfree
 
 constants:
