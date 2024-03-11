@@ -85,6 +85,7 @@ class Simulator():
               'ic_flow_ts_only': problem.ic_flow_ts_only
               }[c['problem']['initial_condition']]
         
+        
         # Create spatial discretisation 
         lat_first = c['spatial_discretisation']['lat_first']
         lat_final = c['spatial_discretisation']['lat_final']
@@ -97,7 +98,8 @@ class Simulator():
                             lng_first:lng_final:lng_n*1j]
         
         # Create values of inital conditions on the discretisation
-        s.y0 = ic(lat,lng)
+        s.y0, more_args = ic(lat,lng)
+        s.args = s.args | more_args
         print('ic created')
 
         # Check how the initial condition data looks

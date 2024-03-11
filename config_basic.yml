@@ -4,8 +4,8 @@ display: False
 
 save:
   save_pkl: True
-  save_pkl_overwrite: False
-  save_pkl_path: "output/incompressible_Midpoint_t1_"
+  save_pkl_overwrite: True
+  save_pkl_path: "output/boundary_t1_"
 
 problem:
   vector_field: vf_flow_incompressible
@@ -26,7 +26,7 @@ spatial_discretisation:
 
 temporal_discretisation_finite:
   t_first: 0
-  t_final: 10
+  t_final: 2
   t_n: 200
 
 temporal_discretisation_infinite: 

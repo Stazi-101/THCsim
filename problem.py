@@ -6,13 +6,6 @@ DT = 0.01
 MAXITER = 100
 
 # Vector fields: list of ys -> list of dy/dts
-def vf_flow_zero(t, T, args):
-    return T*0
-
-
-def vf_flow_simplest(t, T, args):
-    return laplacian(T)
-
 
 def vf_flow_basic(t, ys, args):
     T, S, v = ys
@@ -31,6 +24,7 @@ def vf_flow_basic(t, ys, args):
     dv = dv.at[0].add( -1/rho_0 * ptheta(p) + advection(v,v[0]))
     dv = dv.at[1].add( -1/rho_0 * plambda(p) + advection(v,v[1]))
 
+    
 
     return (dT, dS, dv)
 
@@ -51,7 +45,12 @@ def vf_flow_incompressible(t, ys, args):
     dv = dv.at[0].add( -1/rho_0 * ptheta(p) + advection(v,v[0]))
     dv = dv.at[1].add( -1/rho_0 * plambda(p) + advection(v,v[1]))
 
+    state = args['state']
+    dv *= state
+
     dv = project_divergencefree(dv, args['q_last'])
+
+    
 
     return (dT, dS, dv)
 
@@ -92,11 +91,16 @@ def ic_flow_basic(lat,lng):
     # Initialise v as 0
     v = jnp.zeros((2, lat.shape[0], lat.shape[1]))
     # Add a spot of vertical movement
-    v = v.at[1].set( 1 * ((jnp.square(lat+0.5) + jnp.square(lng+0.5))<1) )
+    v = v.at[1].set( -1 * ((jnp.square(lat+0.5) + jnp.square(lng+0.5))<1) )
     # Force v to be divergence free
-    v = project_divergencefree(v)
 
-    return (T, S, v), {}
+    state = 1 - 1 * ((jnp.square(lat+0.5) + jnp.square(lng+2))<0.7)
+    T*=state; S*=state; v*=state
+
+    v = project_divergencefree(v, state=state)
+
+
+    return (T, S, v), {'state': state}
 
 
 def ic_flow_basic_noboundary(lat,lng):
@@ -113,7 +117,9 @@ def ic_flow_basic_noboundary(lat,lng):
     # Force v to be divergence free
     v = project_divergencefree(v)
 
-    return (T, S, v), {}
+    state = jnp.zeros((lat.shape[0], lat.shape[1]))
+
+    return (T, S, v), {'state': state}
 
 def ic_flow_ts_only(lat,lng):
 
@@ -124,7 +130,9 @@ def ic_flow_ts_only(lat,lng):
     # Initialise v is 0. Naturally divergence free :D
     v = jnp.zeros((2, lat.shape[0], lat.shape[1]))
 
-    return (T, S, v), {}
+    state = jnp.zeros((lat.shape[0], lat.shape[1]))
+
+    return (T, S, v), {'state': state}
 
 def ic_flow_funky(lat,lng):
 
@@ -140,7 +148,9 @@ def ic_flow_funky(lat,lng):
     v = v.at[0].set( 1 * ((jnp.square(lat+0.8) + jnp.square(lng+0.2))<.1) )
     v = v.at[0].set(-1 * ((jnp.square(lat+0.3) + jnp.square(lng+0.8))<.1) )
 
-    return (T, S, v), {}
+    state = jnp.zeros((lat.shape[0], lat.shape[1]))
+
+    return (T, S, v), {'state': state}
 
 def ic_flow_vt_only(lat,lng):
 
@@ -155,7 +165,9 @@ def ic_flow_vt_only(lat,lng):
     v = v.at[0].set( 1 * ((jnp.square(lat) + jnp.square(lng))<0.8) )
     v = v.at[1].set( -1 * ((jnp.square(lat-0.5) + jnp.square(lng-0.5))<0.5) )
 
-    return (T, S, v), {}
+    state = jnp.zeros((lat.shape[0], lat.shape[1]))
+
+    return (T, S, v), {'state': state}
 
 def ic_flow_v_only(lat,lng):
 
@@ -167,7 +179,11 @@ def ic_flow_v_only(lat,lng):
     # Add moving spot
     v = v.at[0].set( 1 * ((jnp.square(lat+0.5) + jnp.square(lng+0.5))<0.5) )
 
-    return (T, S, v), {}
+    state = jnp.zeros((lat.shape[0], lat.shape[1]))
+
+    v = project_divergencefree(v, state=state)
+
+    return (T, S, v), {'state': state}
 
 
 # Functional definitions
@@ -193,6 +209,24 @@ def laplacian(y):
     y_j_prev = jnp.roll(y, shift=-1,axis=-1)
     return (y_j_next + y_i_next - 4 * y + y_j_prev + y_i_prev) / (DT**2)
 
+class LaplacianBoundaryAware():
+
+    def __init__(self, state, neighbours):
+        self.state = state
+        self.nbs = neighbours
+
+    def laplacian(self, y):
+
+        yb = y*self.state
+        
+        y_i_next = jnp.roll(yb, shift=1, axis=-2)
+        y_i_prev = jnp.roll(yb, shift=-1,axis=-2)
+        y_j_next = jnp.roll(yb, shift=1 ,axis=-1)
+        y_j_prev = jnp.roll(yb, shift=-1,axis=-1)
+        return self.state*(y_j_next + y_i_next - self.nbs * yb + y_j_prev + y_i_prev) / (DT**2)
+
+
+
 def advection(v, y):
     if len(y.shape)>=3:
         raise RuntimeError('y too many dimensions')
@@ -204,20 +238,24 @@ def divergence(v):
 
 # Incompressability 
 
-def project_divergencefree(v, q_guess=None):
+def project_divergencefree(v, q_guess=None, state=None):
+
+    laplacian_f = laplacian if state is None else LaplacianBoundaryAware(state).laplacian
+    v *= state
+
 
     q, _ = jsp.sparse.linalg.cg(
-            laplacian,
+            laplacian_f,
             -divergence(v), 
             x0=q_guess,
             maxiter= MAXITER)
     #q_total = q
-    v_f = v + gradient(q)
+    v_f = (v + gradient(q)) * (1 if state is None else state)
     # Repeats as conjugate gradient descent does not necessarily converge to correct solution after 1 run
     for i in range(CG_REPEATS):
         # q is the exact "pressure" needed to maintain densities
         q, _ = jsp.sparse.linalg.cg(
-            laplacian,
+            laplacian_f,
             -divergence(v_f), 
             maxiter= MAXITER)
         #q_total += q
