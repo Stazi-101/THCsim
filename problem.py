@@ -47,8 +47,6 @@ def vf_flow_incompressible(t, ys, args):
     dT = A_HH * laplacian(T) + advection(v, T)
     dS = A_HH * laplacian(S) + advection(v, S)
 
-    print(v)
-
     dv = A_MH * laplacian(v)
     dv = dv.at[0].add( -1/rho_0 * ptheta(p) + advection(v,v[0]))
     dv = dv.at[1].add( -1/rho_0 * plambda(p) + advection(v,v[1]))
@@ -69,8 +67,6 @@ def vf_flow_semicompressible(t, ys, args):
 
     dT = A_HH * laplacian(T) + advection(v, T)
     dS = A_HH * laplacian(S) + advection(v, S)
-
-    print(v)
 
     dv = A_MH * laplacian(v)
     dv = dv.at[0].add( advection(v,v[0]) )

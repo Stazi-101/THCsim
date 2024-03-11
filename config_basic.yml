@@ -26,7 +26,7 @@ spatial_discretisation:
 
 temporal_discretisation_finite:
   t_first: 0
-  t_final: 1
+  t_final: 10
   t_n: 200
 
 temporal_discretisation_infinite: 
@@ -35,15 +35,15 @@ temporal_discretisation_infinite:
   t_n_each_solve: 100
 
 solver_options:
-  type: 'diffrax_Midpoint'
+  type: 'diffrax_Euler'
   finite_diff_dt: 0.001
   stepsize_controller:
-    type: 'diffrax_PIDController'
+    type: 'diffrax_ConstantStepSize'
     pcoeff: 0.3
     icoeff: 0.4
-    rtol: 1.0e-7
-    atol: 1.0e-7
-    dtmax: 0.01
+    rtol: 1.0e-3
+    atol: 1.0e-3
+    dtmax: 0.1
   
 
 map:
