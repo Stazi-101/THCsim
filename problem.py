@@ -5,6 +5,9 @@ CG_REPEATS = 2
 DT = 0.01
 MAXITER = 100
 
+DTHETA = 1
+DLAMBDA = 1
+
 # Vector fields: list of ys -> list of dy/dts
 
 def vf_flow_basic(t, ys, args):
@@ -191,12 +194,12 @@ def ic_flow_v_only(lat,lng):
 def ptheta(y):
     y_i_next = jnp.roll(y, shift=1, axis=-2)
     y_i_prev = jnp.roll(y, shift=-1,axis=-2)
-    return (y_i_next - y_i_prev) / (2*0.01)
+    return (y_i_next - y_i_prev) / (2*DTHETA)
 
 def plambda(y):
     y_j_next = jnp.roll(y, shift=1, axis=-1)
     y_j_prev = jnp.roll(y, shift=-1,axis=-1)
-    return (y_j_next - y_j_prev) / (2*0.01)
+    return (y_j_next - y_j_prev) / (2*DLAMBDA)
 
 def gradient(y):
     return jnp.array( (ptheta(y), plambda(y)))
@@ -207,9 +210,9 @@ def laplacian(y):
     y_i_prev = jnp.roll(y, shift=-1,axis=-2)
     y_j_next = jnp.roll(y, shift=1 ,axis=-1)
     y_j_prev = jnp.roll(y, shift=-1,axis=-1)
-    return (y_j_next + y_i_next - 4 * y + y_j_prev + y_i_prev) / (DT**2)
+    return (y_j_next + y_i_next - 4 * y + y_j_prev + y_i_prev) / (DTHETA*DLAMBDA)
 
-class LaplacianBoundaryAware():
+class BoundaryAware():
 
     def __init__(self, state, neighbours):
         self.state = state
@@ -218,12 +221,16 @@ class LaplacianBoundaryAware():
     def laplacian(self, y):
 
         yb = y*self.state
-        
+        #print('changed')        
         y_i_next = jnp.roll(yb, shift=1, axis=-2)
         y_i_prev = jnp.roll(yb, shift=-1,axis=-2)
         y_j_next = jnp.roll(yb, shift=1 ,axis=-1)
         y_j_prev = jnp.roll(yb, shift=-1,axis=-1)
-        return self.state*(y_j_next + y_i_next - self.nbs * yb + y_j_prev + y_i_prev) / (DT**2)
+        return y*(1-self.state) + self.state*(y_j_next 
+                                            + y_i_next
+                                            - self.nbs * yb 
+                                            + y_j_prev 
+                                            + y_i_prev) / (DTHETA*DLAMBDA)
 
 
 
