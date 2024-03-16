@@ -99,6 +99,8 @@ class Displayer():
             plt.imshow(self.slice(x=x, y=y, 
               c1=c1, c2=c2, c3=c3, c4=c4, c5=c5, c6=c6), 
               interpolation='nearest')
+            plt.xticks([])
+            plt.yticks([])
 
         # `interact` function call to create two sliders
         return interact(plot_2d_slice,

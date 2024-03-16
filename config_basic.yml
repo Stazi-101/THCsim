@@ -28,7 +28,7 @@ spatial_discretisation:
 
 temporal_discretisation_finite:
   t_first: 0
-  t_final: 15
+  t_final: 25
   t_n: 250
 
 temporal_discretisation_infinite: 
