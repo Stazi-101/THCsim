@@ -98,7 +98,7 @@ class Simulator():
                             lng_first:lng_final:lng_n*1j]
         
         # Create values of inital conditions on the discretisation
-        s.y0, more_args = ic(lat,lng)
+        s.y0, more_args = ic(config, lat, lng)
         s.args = s.args | more_args
         print('ic created')
 

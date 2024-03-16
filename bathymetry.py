@@ -12,11 +12,21 @@ def get_map_path(config):
         return config["map"]["mask_image_path"]
 
 
-def load_np(config):
+def load_image_np(config):
 
     image_np = cv2.imread(get_map_path(config)) 
 
     return image_np[:,:,::-1]
+
+
+def load_state_np(config):
+
+    image = load_image_np(config)
+
+    lat_n, lng_n = config['spatial_discretisation']['lat_n'], config['spatial_discretisation']['lng_n']
+    small_im = cv2.resize(image, (lng_n, lat_n), interpolation=cv2.INTER_LINEAR)
+
+    return small_im[:,:,2]>5
 
 
 
@@ -26,15 +36,10 @@ if __name__ == '__main__':
     config = {"map": {"mask_image_path_relative": True, 
                       "mask_image_path": "resources/map/gebco_08_rev_bath_3600x1800_color.jpg"}}
     
-    im = load_np(config).astype(int)
-    print(im.shape)
+    plt.imshow(load_state_np(config))
+    
 
-    im[:,:,:] += (np.isclose(im[:,:,0],im[:,:,2], atol=4))[:,:,np.newaxis]*255
-
-    im[im>255]=255
-
-    plt.imshow(im)
-    #plt.show()
+    
 
 
     

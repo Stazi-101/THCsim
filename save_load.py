@@ -2,7 +2,7 @@
 from os.path import isfile
 import pickle as pkl
 
-def save(config, X):
+def save(config, X, args):
     
     path = config['save']['save_pkl_path']
     
@@ -19,7 +19,7 @@ def save(config, X):
                 path = path+str(i)
     
     with open(path+'.pkl', 'wb') as file:
-        pkl.dump(X, file)
+        pkl.dump((X, args), file)
     return True
         
 

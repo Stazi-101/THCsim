@@ -12,8 +12,8 @@ problem:
   initial_condition: ic_flow_basic
 
 constants:
-  horizontal_diffusivity: 0.001
-  horizontal_viscosity: 0.01
+  horizontal_diffusivity: 0.5
+  horizontal_viscosity: 1
   reference_density: 0.1
 
 spatial_discretisation:
@@ -28,8 +28,8 @@ spatial_discretisation:
 
 temporal_discretisation_finite:
   t_first: 0
-  t_final: 2
-  t_n: 200
+  t_final: 15
+  t_n: 250
 
 temporal_discretisation_infinite: 
   t_first: 0

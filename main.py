@@ -42,7 +42,7 @@ def main():
         
     if config['save']['save_pkl']:
         print('Saving...')
-        save_load.save(config, chunk)
+        save_load.save(config, chunk, sim.args)
         print('saved')
 
 
