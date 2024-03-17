@@ -13,7 +13,7 @@ problem:
 
 constants:
   horizontal_diffusivity: 0.5
-  horizontal_viscosity: 1
+  horizontal_viscosity: 0.5
   reference_density: 0.1
 
 spatial_discretisation:
@@ -28,7 +28,7 @@ spatial_discretisation:
 
 temporal_discretisation_finite:
   t_first: 0
-  t_final: 25
+  t_final: 50
   t_n: 250
 
 temporal_discretisation_infinite: 

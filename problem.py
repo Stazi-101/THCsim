@@ -52,17 +52,20 @@ def vf_flow_incompressible(t, ys, args):
     dT = A_HH * ba.laplacian(T) + ba.advection(v, T)
     dS = A_HH * ba.laplacian(S) + ba.advection(v, S)
 
-    dv = A_MH * ba.laplacian(v)
+    #dv = A_MH * ba.laplacian(v)
+    dv = v*0
     dv = dv.at[0].add( ba.advection(v,v[0]) )  # -1/rho_0 * ba.ptheta(p) 
-    dv = dv.at[1].add( ba.advection(v,v[1]) )  # -1/rho_0 * ba.plambda(p)
+    dv = dv.at[1].add( ba.advection(v,v[1])  )  # -1/rho_0 * ba.plambda(p)
 
     state = args['state']
-    dv *= state
 
     dv = ba.project_divergencefree(dv)
-    dv *= (ba.neighbours==4)
-    dT *= state
-    dS *= state
+    #dv = ba.blur(dv)
+    dv += A_MH * ba.laplacian(v)
+
+    dv *= (ba.inner_fluid)
+    dT *= ba.inner_fluid
+    dS *= ba.inner_fluid
 
     return (dT, dS, dv)
 
@@ -96,6 +99,9 @@ def vf_flow_semicompressible(t, ys, args):
 
 # Initial conditions: coordinates -> list of ys
 def ic_flow_basic(config, lat,lng):
+
+    state = 1 - 1 * ((jnp.square(lat+0.5) + jnp.square(lng+2))<0.7)
+    ba = BoundaryAware(state)
     
     # Hot spot in centre
     T = 1 * ((jnp.square(lat) + jnp.square(lng))<0.7) 
@@ -105,13 +111,18 @@ def ic_flow_basic(config, lat,lng):
     # Initialise v as 0
     v = jnp.zeros((2, lat.shape[0], lat.shape[1]))
     # Add a spot of vertical movement
-    v = v.at[1].set( -10 * ((jnp.square(lat+0.5) + jnp.square(lng+0.5))<1) )
-    # Force v to be divergence free
+    v = v.at[1].set( -10 * ((jnp.square(lat+0.5) + jnp.square(lng-1.5))<1) )
 
-    state = 1 - 1 * ((jnp.square(lat+0.5) + jnp.square(lng+2))<0.7)
-    ba = BoundaryAware(state)
+    for i in range(5):
+        v = ba.blur(v)
 
-    T*=state; S*=state; v*=state
+    #v = v*0 + 1
+
+    v *= ba.inner_fluid[jnp.newaxis]
+    T *= ba.inner_fluid
+    S *= ba.inner_fluid
+
+    
 
     v = ba.project_divergencefree(v)
 
@@ -227,91 +238,55 @@ class BoundaryAware():
         self.state = state
         self.neighbours = neighbours(state)
         self.inner_solid = neighbours(1-state)==4
+        self.inner_fluid = self.neighbours==4
     
-    def laplacian(self,y):
-        return self.laplacian_divgrad(y)
-
-    def laplacian_divgrad(self, y):
-        
+    def laplacian_solvey(self,y):
         return self.divergence(self.gradient(y)) +  y*(-1+self.state)
         
-    def laplacian_rolls(self, y):
-        yb = y*self.state
-
-        y_i_next = jnp.roll(yb, shift=1, axis=-2)
-        y_i_prev = jnp.roll(yb, shift=-1,axis=-2)
-        y_j_next = jnp.roll(yb, shift=1 ,axis=-1)
-        y_j_prev = jnp.roll(yb, shift=-1,axis=-1)
-        return  y*(1-self.state) + self.state*(y_j_next #
-                                            + y_i_next
-                                            - self.nbs * yb 
-                                            + y_j_prev 
-                                            + y_i_prev) / (DTHETA*DLAMBDA)
-    
-    def laplacian_ps(self, y):
-        return self.ptheta(self.ptheta(y)) + self.plambda(self.plambda(y))
-
+    def laplacian(self, y):
+        y_i_next = jnp.roll(y, shift=1, axis=-2)
+        y_i_prev = jnp.roll(y, shift=-1,axis=-2)
+        y_j_next = jnp.roll(y, shift=1 ,axis=-1)
+        y_j_prev = jnp.roll(y, shift=-1,axis=-1)
+        return (y_i_next + y_i_prev + y_j_next + y_j_prev - self.neighbours*y) / (DTHETA * DLAMBDA) * self.state 
 
     def ptheta(self, y):
-        y_i_next = jnp.roll(y,          shift=1, axis=-2)
-        y_i_prev = jnp.roll(y,          shift=-1,axis=-2)
+        y_i_next = jnp.roll(y, shift=1, axis=-2)
+        y_i_prev = jnp.roll(y, shift=-1,axis=-2)
 
-        f_i_next = jnp.roll(self.state, shift=1, axis=-2)
-        f_i_prev = jnp.roll(self.state, shift=-1,axis=-2)
-
-        return self.state * ( # there is only a valid derivative in fluid cells
-                 f_i_next * f_i_prev     * (y_i_next - y_i_prev) / 2  # case where both neighbours are fluid
-               + f_i_next * (1-f_i_prev) * (y_i_next - y)             # case where only the next neighbour is fluid
-               + (1-f_i_next) * f_i_prev * (y - y_i_prev)             # case where only the previous neighbour is fluid
-            )/DTHETA                                        # when neither neighbour is fluid, the previous two cases cancel out
+        return self.inner_fluid * (y_i_next - y_i_prev) / (2 * DTHETA)  
              
     def plambda(self, y): 
         y_j_next = jnp.roll(y,          shift= 1,axis=-1)
         y_j_prev = jnp.roll(y,          shift=-1,axis=-1)
 
-        f_j_next = jnp.roll(self.state, shift= 1,axis=-1)
-        f_j_prev = jnp.roll(self.state, shift=-1,axis=-1)
-
-        return self.state * (  # there is only a valid derivative in fluid cells
-                 f_j_next * f_j_prev     * (y_j_next - y_j_prev) / 2  # case where both neighbours are fluid
-               + f_j_next * (1-f_j_prev) * (y_j_next - y)             # case where only the next neighbour is fluid
-               + (1-f_j_next) * f_j_prev * (y - y_j_prev)             # case where only the previous neighbour is fluid
-            )/DTHETA                                        # when neither neighbour is fluid, the previous two cases cancel out
+        return self.inner_fluid * (y_j_next - y_j_prev) / (2 * DLAMBDA)  
 
     def gradient(self, y):
         return jnp.array( (self.ptheta(y), self.plambda(y)))
     
     def divergence(self, y):
-        return self.divergence_roll(y)
-
-    def divergence_ps(self, y):
-        return self.ptheta(y[0]) + self.plambda(y[1])
-
-    def divergence_roll(self, y):
         y_i_next = jnp.roll(y[0], shift=1, axis=-2)
         y_i_prev = jnp.roll(y[0], shift=-1,axis=-2)
         y_j_next = jnp.roll(y[1], shift=1 ,axis=-1)
         y_j_prev = jnp.roll(y[1], shift=-1,axis=-1)
-        return (y_i_next - y_i_prev + y_j_next - y_j_prev) #*self.state
+        return (y_i_next - y_i_prev + y_j_next - y_j_prev)
     
     def advection(self, v, y):
         return self.state*(v[0] * self.ptheta(y) + v[1] * self.plambda(y) )
-    
+        
     def blur(self, y):
-        return (jnp.roll(y,  1, axis=-2)
-              + jnp.roll(y, -1, axis=-2)
-              + jnp.roll(y,  1, axis=-1)
-              + jnp.roll(y, -1, axis=-1)
-              + y) / (self.neighbours + 1) *self.state
+        return (jnp.roll(y*self.state,  1, axis=-2)
+            + jnp.roll(y*self.state, -1, axis=-2)
+            + jnp.roll(y*self.state,  1, axis=-1)
+            + jnp.roll(y*self.state, -1, axis=-1)
+            + y) / (self.neighbours + 1 ) *self.state
 
     # Incompressability 
 
     def project_divergencefree(self, v):
 
-        v *= self.state
-
         iters = (150, 100, 50)
-        blurs = (True, True, True)
 
         v_f = v
         # Repeats as conjugate gradient descent does not necessarily converge to correct solution after 1 run
@@ -319,13 +294,11 @@ class BoundaryAware():
 
             # q is the exact "pressure" needed to maintain densities
             q, _ = jsp.sparse.linalg.cg(
-                self.laplacian,
+                self.laplacian_solvey,
                 -self.divergence(v_f), 
                 maxiter= iters[i])
             
             v_f += self.gradient(q)
-            if blurs[i]:
-                v_f = self.blur(v_f)
 
         return v_f    
         

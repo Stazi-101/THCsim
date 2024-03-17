@@ -19,6 +19,8 @@ class Displayer():
 
         self.t_n = self.vector_fields['v'].shape[0]
 
+        self.ba = self.args['boundary_aware_functions']
+
 
 
         
@@ -48,16 +50,14 @@ class Displayer():
     def slice(self, x=0, y=0, 
               c1=False, c2=False, c3=False, c4=False, c5=False, c6=False):
 
-        def scale_q(q):
-            return q/( min(np.max(np.abs(q)), y))
-                
+                        
         T = self.scalar_fields['T'][x]
         S = self.scalar_fields['S'][x]
         v = self.vector_fields['v'][x]
 
         r, g, b = [np.zeros(T.shape) for _ in range(3)]
 
-        v = scale_q(v)
+        v = v/y
 
         if c1:
             r += v[0] + 0.5
@@ -73,20 +73,6 @@ class Displayer():
         if c6: 
             b += self.args['state']
 
-        '''
-        vs = np.swapaxes(vs, 0, 1)
-        yssc = np.expand_dims(T, 3)
-        yssc = np.repeat(yssc, 3, axis=3)
-        #yssc = yssc*0
-        yssc[:,:,:,1] = Ss
-        yssc[:,:,:,2] = np.linalg.norm(vs, axis=0)
-
-        yssc[:,:,:,:2] *= 0
-
-        self.data = yssc
-        '''
-
-        #+ 0*1/self.args['state'][:,:,np.newaxis]
 
         return np.stack((r,g,b), axis=2)
     
@@ -105,7 +91,7 @@ class Displayer():
         # `interact` function call to create two sliders
         return interact(plot_2d_slice,
         x=IntSlider(min=0, max=self.t_n-1, step=1, value=0, description='X Dimension', continuous_update=True),
-        y=IntSlider(min=2, max=40, step=2, value=16, description='Y Dimension'),
+        y=IntSlider(min=2, max=100, step=2, value=16, description='Y Dimension'),
         c1 = Checkbox(value = False, description = 'v0'),
         c2 = Checkbox(value = False, description = 'v1'),
         c3 = Checkbox(value = True, description = 'vnorm'),
