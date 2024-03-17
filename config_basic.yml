@@ -26,6 +26,9 @@ spatial_discretisation:
   earth_radius: 6371000
   earth_spin: 0.00007292
 
+map:
+  mask_image_path_relative: True
+  mask_image_path: resources/map/gebco_08_rev_bath_3600x1800_color.jpg
   
 
 temporal_discretisation_finite:

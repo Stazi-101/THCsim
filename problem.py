@@ -63,7 +63,7 @@ def vf_flow_incompressible(t, ys, args):
     #dv = ba.blur(dv)
     dv += A_MH * ba.laplacian(v)
 
-    dv *= (ba.inner_fluid)
+    dv *= ba.inner_fluid
     dT *= ba.inner_fluid
     dS *= ba.inner_fluid
 
@@ -100,8 +100,11 @@ def vf_flow_semicompressible(t, ys, args):
 # Initial conditions: coordinates -> list of ys
 def ic_flow_basic(config, lat,lng):
 
+    R = config['spatial_discretisation']['earth_radius']
+    sintheta = jnp.sin(lat)
+
     state = 1 - 1 * ((jnp.square(lat+0.5) + jnp.square(lng+2))<0.7)
-    ba = BoundaryAware(state)
+    ba = BoundaryAware(state, R, sintheta)
     
     # Hot spot in centre
     T = 1 * ((jnp.square(lat) + jnp.square(lng))<0.7) 
@@ -124,11 +127,12 @@ def ic_flow_basic(config, lat,lng):
 
     v = ba.project_divergencefree(v)
 
-    R = config['spatial_discretisation']['earth_radius']
-    overRsintheta = 1/(R*jnp.sin(lat))
+    
     
 
-    return (T, S, v), {'state': state, 'boundary_aware_functions': ba }
+    return (T, S, v), {'state': state, 'boundary_aware_functions': ba, 'R': R, 'sintheta': sintheta }
+
+
 
 
 def ic_flow_basic_noboundary(config, lat, lng):
@@ -226,7 +230,7 @@ def ic_flow_v_only(config, lat, lng):
 
 class BoundaryAware():
 
-    def __init__(self, fluid):
+    def __init__(self, fluid, R, sintheta):
 
         def neighbours(state):
             s_i_next = jnp.roll(state, shift=1, axis=-2)
@@ -241,6 +245,9 @@ class BoundaryAware():
         self.neighbours = neighbours(fluid)
         self.inner_solid = neighbours(1-fluid)==4
         self.inner_fluid = self.neighbours==4
+
+        self.dtheta = 1/R
+        self.dlambda = 1/(R * sintheta)
     
     def laplacian_solvey(self,y):
         return self.divergence(self.gradient(y)) - y*(self.inner_solid)
@@ -250,19 +257,19 @@ class BoundaryAware():
         y_i_prev = jnp.roll(y, shift=-1,axis=-2)
         y_j_next = jnp.roll(y, shift=1 ,axis=-1)
         y_j_prev = jnp.roll(y, shift=-1,axis=-1)
-        return (y_i_next + y_i_prev + y_j_next + y_j_prev - self.neighbours*y) / (DTHETA * DLAMBDA) * self.fluid 
+        return (y_i_next + y_i_prev + y_j_next + y_j_prev - self.neighbours*y) / (self.dtheta * self.dlambda) * self.fluid 
 
     def ptheta(self, y):
         y_i_next = jnp.roll(y, shift=1, axis=-2)
         y_i_prev = jnp.roll(y, shift=-1,axis=-2)
 
-        return self.fluid * (y_i_next - y_i_prev) / (2 * DTHETA)  
+        return self.fluid * (y_i_next - y_i_prev) / (2 * self.dtheta)  
              
     def plambda(self, y): 
         y_j_next = jnp.roll(y,          shift= 1,axis=-1)
         y_j_prev = jnp.roll(y,          shift=-1,axis=-1)
 
-        return self.fluid * (y_j_next - y_j_prev) / (2 * DLAMBDA)  
+        return self.fluid * (y_j_next - y_j_prev) / (2 * self.dlambda)  
 
     def gradient(self, y):
         return jnp.array( (self.ptheta(y), self.plambda(y)))
@@ -272,7 +279,7 @@ class BoundaryAware():
         y_i_prev = jnp.roll(y[0], shift=-1,axis=-2)
         y_j_next = jnp.roll(y[1], shift=1 ,axis=-1)
         y_j_prev = jnp.roll(y[1], shift=-1,axis=-1)
-        return (y_i_next - y_i_prev + y_j_next - y_j_prev)
+        return (y_i_next - y_i_prev)/(2*self.dtheta) + (y_j_next - y_j_prev)/(2*self.dlambda)
     
     def advection(self, v, y):
         return self.fluid*(v[0] * self.ptheta(y) + v[1] * self.plambda(y) )
