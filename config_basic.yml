@@ -19,16 +19,18 @@ constants:
 spatial_discretisation:
   lat_first: -1.57
   lat_final: 1.57
-  lat_n:     450
+  lat_n:     45
   lng_first: -3.14
   lng_final: 3.14
-  lng_n:     900
+  lng_n:     90
+  earth_radius: 6371000
+  earth_spin: 0.00007292
 
   
 
 temporal_discretisation_finite:
   t_first: 0
-  t_final: 50
+  t_final: 15
   t_n: 250
 
 temporal_discretisation_infinite: 

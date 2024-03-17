@@ -122,9 +122,11 @@ def ic_flow_basic(config, lat,lng):
     T *= ba.inner_fluid
     S *= ba.inner_fluid
 
-    
-
     v = ba.project_divergencefree(v)
+
+    R = config['spatial_discretisation']['earth_radius']
+    overRsintheta = 1/(R*jnp.sin(lat))
+    
 
     return (T, S, v), {'state': state, 'boundary_aware_functions': ba }
 
