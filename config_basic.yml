@@ -19,10 +19,10 @@ constants:
 spatial_discretisation:
   lat_first: -1.57
   lat_final: 1.57
-  lat_n:     45
+  lat_n:     450
   lng_first: -3.14
   lng_final: 3.14
-  lng_n:     90
+  lng_n:     900
 
   
 

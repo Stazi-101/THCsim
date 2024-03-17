@@ -5,8 +5,8 @@ CG_REPEATS = 2
 DT = 0.01
 MAXITER = 100
 
-DTHETA = 1
-DLAMBDA = 1
+DTHETA = 10
+DLAMBDA = 10
 
 # Vector fields: list of ys -> list of dy/dts
 
@@ -224,7 +224,7 @@ def ic_flow_v_only(config, lat, lng):
 
 class BoundaryAware():
 
-    def __init__(self, state):
+    def __init__(self, fluid):
 
         def neighbours(state):
             s_i_next = jnp.roll(state, shift=1, axis=-2)
@@ -235,32 +235,32 @@ class BoundaryAware():
             return s_i_next + s_i_prev + s_j_next + s_j_prev
         
 
-        self.state = state
-        self.neighbours = neighbours(state)
-        self.inner_solid = neighbours(1-state)==4
+        self.fluid = fluid
+        self.neighbours = neighbours(fluid)
+        self.inner_solid = neighbours(1-fluid)==4
         self.inner_fluid = self.neighbours==4
     
     def laplacian_solvey(self,y):
-        return self.divergence(self.gradient(y)) +  y*(-1+self.state)
+        return self.divergence(self.gradient(y)) - y*(self.inner_solid)
         
     def laplacian(self, y):
         y_i_next = jnp.roll(y, shift=1, axis=-2)
         y_i_prev = jnp.roll(y, shift=-1,axis=-2)
         y_j_next = jnp.roll(y, shift=1 ,axis=-1)
         y_j_prev = jnp.roll(y, shift=-1,axis=-1)
-        return (y_i_next + y_i_prev + y_j_next + y_j_prev - self.neighbours*y) / (DTHETA * DLAMBDA) * self.state 
+        return (y_i_next + y_i_prev + y_j_next + y_j_prev - self.neighbours*y) / (DTHETA * DLAMBDA) * self.fluid 
 
     def ptheta(self, y):
         y_i_next = jnp.roll(y, shift=1, axis=-2)
         y_i_prev = jnp.roll(y, shift=-1,axis=-2)
 
-        return self.inner_fluid * (y_i_next - y_i_prev) / (2 * DTHETA)  
+        return self.fluid * (y_i_next - y_i_prev) / (2 * DTHETA)  
              
     def plambda(self, y): 
         y_j_next = jnp.roll(y,          shift= 1,axis=-1)
         y_j_prev = jnp.roll(y,          shift=-1,axis=-1)
 
-        return self.inner_fluid * (y_j_next - y_j_prev) / (2 * DLAMBDA)  
+        return self.fluid * (y_j_next - y_j_prev) / (2 * DLAMBDA)  
 
     def gradient(self, y):
         return jnp.array( (self.ptheta(y), self.plambda(y)))
@@ -273,14 +273,14 @@ class BoundaryAware():
         return (y_i_next - y_i_prev + y_j_next - y_j_prev)
     
     def advection(self, v, y):
-        return self.state*(v[0] * self.ptheta(y) + v[1] * self.plambda(y) )
+        return self.fluid*(v[0] * self.ptheta(y) + v[1] * self.plambda(y) )
         
     def blur(self, y):
-        return (jnp.roll(y*self.state,  1, axis=-2)
-            + jnp.roll(y*self.state, -1, axis=-2)
-            + jnp.roll(y*self.state,  1, axis=-1)
-            + jnp.roll(y*self.state, -1, axis=-1)
-            + y) / (self.neighbours + 1 ) *self.state
+        return (jnp.roll(y*self.fluid,  1, axis=-2)
+            + jnp.roll(y*self.fluid, -1, axis=-2)
+            + jnp.roll(y*self.fluid,  1, axis=-1)
+            + jnp.roll(y*self.fluid, -1, axis=-1)
+            + y) / (self.neighbours + 1 ) *self.fluid
 
     # Incompressability 
 
